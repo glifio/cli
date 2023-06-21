@@ -6,10 +6,14 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/glifio/cli/journal/alerting"
+	"github.com/glifio/cli/util"
 	"github.com/glifio/go-pools/constants"
+	denoms "github.com/glifio/go-pools/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -19,14 +23,16 @@ var agentAutopilotCmd = &cobra.Command{
 	Short: "Background service that automatically repays FIL to pools",
 	Long:  `Background service that automatically repays FIL to pools.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Println("Starting autopilot...")
 		defer journal.Close()
+
+		// setup alerting
+		setupAlerts(cmd, []string{"agent:balance"})
 
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 		ctx := cmd.Context()
-
-		log.Println("Starting autopilot...")
 
 		for {
 			select {
@@ -34,6 +40,7 @@ var agentAutopilotCmd = &cobra.Command{
 				log.Println("Shutting down...")
 				Exit(0)
 			default:
+				checkAlerts(cmd)
 				log.Println("Checking for payments...")
 				// each loop retrieve config values aka hot-reload
 				paymentType, err := ParsePaymentType(viper.GetString("autopilot.payment-type"))
@@ -111,6 +118,69 @@ var agentAutopilotCmd = &cobra.Command{
 			}
 		}
 	},
+}
+
+var daemonAlerts []alerting.AlertType
+
+func setupAlerts(cmd *cobra.Command, alrts []string) {
+	// setup alerts
+	for _, alt := range alrts {
+		system, subsystem := splitAlertToStrings(alt)
+		at := alerts.AddAlertType(system, subsystem)
+		daemonAlerts = append(daemonAlerts, at)
+	}
+}
+
+func splitAlertToStrings(alert string) (string, string) {
+	// split colon delimited alert string into two strings
+	// for example: "system:subsystem"
+	// returns "system", "subsystem"
+
+	strs := strings.Split(alert, ":")
+
+	return strs[0], strs[1]
+}
+
+func checkAlerts(cmd *cobra.Command) {
+	// check for alerts
+
+	for _, alt := range daemonAlerts {
+		switch {
+		case alt.System == "agent" && alt.Subsystem == "balance":
+			if lowBalance(cmd, 0.5) {
+				alerts.Raise(alt, "Agent balance is low")
+			}
+		}
+	}
+}
+
+func lowBalance(cmd *cobra.Command, threshold float64) bool {
+	thres := big.NewFloat(threshold)
+
+	ks := util.KeyStore()
+
+	_, operatorFevm, err := ks.GetAddrs(util.OperatorKey)
+	if err != nil {
+		log.Printf("Failed to get operator address %s", err)
+	}
+
+	lapi, closer, err := PoolsSDK.Extern().ConnectLotusClient()
+	if err != nil {
+		log.Printf("Failed to instantiate eth client %s", err)
+	}
+	defer closer()
+
+	bal, err := lapi.WalletBalance(cmd.Context(), operatorFevm)
+	if err != nil {
+		log.Printf("Failed to get balance %s", err)
+	}
+	if bal.Int == nil {
+		err = fmt.Errorf("failed to get balance")
+		log.Println(err)
+	}
+	balDecimal := denoms.ToFIL(bal.Int)
+
+	return balDecimal.Cmp(thres) < 0
 }
 
 func init() {

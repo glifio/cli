@@ -25,6 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	jnal "github.com/glifio/cli/journal"
+	"github.com/glifio/cli/journal/alerting"
 	"github.com/glifio/cli/journal/fsjournal"
 	"github.com/glifio/cli/util"
 	"github.com/glifio/go-pools/constants"
@@ -40,6 +41,7 @@ var useCalibnet bool // only set in root_calibnet.go
 var chainID int64 = constants.MainnetChainID
 var PoolsSDK types.PoolsSDK
 var journal jnal.Journal
+var alerts *alerting.Alerting
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -100,6 +102,8 @@ func initConfig() {
 	if journal, err = fsjournal.OpenFSJournal(cfgDir, nil); err != nil {
 		logFatal(err)
 	}
+
+	alerts = alerting.NewAlertingSystem(journal)
 
 	if err := util.NewKeyStore(fmt.Sprintf("%s/keys.toml", cfgDir)); err != nil {
 		logFatal(err)
