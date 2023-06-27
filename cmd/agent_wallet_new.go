@@ -4,14 +4,23 @@ Copyright © 2023 Glif LTD
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/filecoin-project/go-address"
 	"github.com/glifio/cli/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	ledgerfil "github.com/whyrusleeping/ledger-filecoin-go"
 )
+
+const hdHard = 0x80000000
+
+var filHDBasePath = []uint32{hdHard | 44, hdHard | 461, hdHard, 0}
 
 func panicIfKeyExists(key util.KeyType, addr common.Address, err error) {
 	if err != nil {
@@ -31,19 +40,55 @@ var newCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ks := util.KeyStore()
 
-		ownerAddr, ownerDelAddr, err := ks.GetAddrs(util.OwnerKey)
+		ownerAddr, _, err := ks.GetAddrs(util.OwnerKey)
 		panicIfKeyExists(util.OwnerKey, ownerAddr, err)
 
-		operatorAddr, operatorDelAddr, err := ks.GetAddrs(util.OperatorKey)
+		operatorAddr, _, err := ks.GetAddrs(util.OperatorKey)
 		panicIfKeyExists(util.OperatorKey, operatorAddr, err)
 
-		requestAddr, requestDelAddr, err := ks.GetAddrs(util.RequestKey)
+		requestAddr, _, err := ks.GetAddrs(util.RequestKey)
 		panicIfKeyExists(util.RequestKey, requestAddr, err)
 
 		// Create the Ethereum private key
-		ownerPrivateKey, err := crypto.GenerateKey()
-		if err != nil {
-			logFatal(err)
+		hardwareWallet, _ := cmd.Flags().GetBool("use-hardware-wallet-for-owner")
+
+		if hardwareWallet {
+			fmt.Println("Looking for Ledger hardware wallet...")
+
+			fl, err := ledgerfil.FindLedgerFilecoinApp()
+			if err != nil {
+				log.Fatalf("finding ledger: %e", err)
+			}
+			defer fl.Close() // nolint:errcheck
+
+			path := append(append([]uint32(nil), filHDBasePath...), uint32(0))
+			_, _, addr, err := fl.GetAddressPubKeySECP256K1(path)
+			if err != nil {
+				log.Fatalf("getting public key from ledger: %e", err)
+			}
+
+			fmt.Printf("creating key: %s, accept the key in ledger device", addr)
+			_, _, addr, err = fl.ShowAddressPubKeySECP256K1(path)
+			if err != nil {
+				log.Fatalf("verifying public key with ledger: %e", err)
+			}
+
+			a, err := address.NewFromString(addr)
+			if err != nil {
+				log.Fatalf("parsing address: %s", err)
+			}
+
+			fmt.Println("\nAddress:", a)
+			os.Exit(1)
+		} else {
+			ownerPrivateKey, err := crypto.GenerateKey()
+			if err != nil {
+				logFatal(err)
+			}
+
+			if err := ks.SetKey(util.OwnerKey, ownerPrivateKey); err != nil {
+				logFatal(err)
+			}
 		}
 
 		operatorPrivateKey, err := crypto.GenerateKey()
@@ -53,10 +98,6 @@ var newCmd = &cobra.Command{
 
 		requestPrivateKey, err := crypto.GenerateKey()
 		if err != nil {
-			logFatal(err)
-		}
-
-		if err := ks.SetKey(util.OwnerKey, ownerPrivateKey); err != nil {
 			logFatal(err)
 		}
 
@@ -72,15 +113,15 @@ var newCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		ownerAddr, ownerDelAddr, err = ks.GetAddrs(util.OwnerKey)
+		ownerAddr, ownerDelAddr, err := ks.GetAddrs(util.OwnerKey)
 		if err != nil {
 			logFatal(err)
 		}
-		operatorAddr, operatorDelAddr, err = ks.GetAddrs(util.OperatorKey)
+		operatorAddr, operatorDelAddr, err := ks.GetAddrs(util.OperatorKey)
 		if err != nil {
 			logFatal(err)
 		}
-		requestAddr, requestDelAddr, err = ks.GetAddrs(util.RequestKey)
+		requestAddr, requestDelAddr, err := ks.GetAddrs(util.RequestKey)
 		if err != nil {
 			logFatal(err)
 		}
@@ -95,4 +136,7 @@ var newCmd = &cobra.Command{
 
 func init() {
 	walletCmd.AddCommand(newCmd)
+	newCmd.Flags().Bool("use-hardware-wallet-for-owner", false, "Use a hardware wallet for the owner (eg. Ledger)")
+	// newCmd.Flags().String("ledger-app", "filecoin", "Which Ledger app to use")
+	// newCmd.Flags().String("ledger-account", "0", "Which Ledger account to use")
 }
