@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -79,7 +78,10 @@ var newCmd = &cobra.Command{
 			}
 
 			fmt.Println("\nAddress:", a)
-			os.Exit(1)
+
+			if err := ks.SetHardwareWalletKey(util.OwnerKey, "ledger", "filecoin", "0", a.String()); err != nil {
+				logFatal(err)
+			}
 		} else {
 			ownerPrivateKey, err := crypto.GenerateKey()
 			if err != nil {

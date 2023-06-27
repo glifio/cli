@@ -88,6 +88,12 @@ func (s *KeyStorage) SetKey(key KeyType, pk *ecdsa.PrivateKey) error {
 	return err
 }
 
+func (s *KeyStorage) SetHardwareWalletKey(key KeyType, deviceName string, appName string, account string, address string) error {
+	err := s.Set(string(key)+"-hw-wallet", deviceName+"-"+appName+"-"+account+"-"+address)
+
+	return err
+}
+
 func DeriveAddrFromPkString(pk string) (common.Address, address.Address, error) {
 	pkECDSA, err := crypto.HexToECDSA(pk)
 	if err != nil {
