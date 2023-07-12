@@ -8,3 +8,7 @@ payment-type = 'to-current'
 # amount is only required for 'principal' and 'custom' payment types
 amount = 0
 frequency = 5
+[autopilot.pullfunds]
+enabled = true
+# to save on gas fees, pull the payment amount * pull-amount-factor
+pull-amount-factor = 3

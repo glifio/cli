@@ -12,8 +12,8 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/glifio/cli/events"
-	"github.com/glifio/cli/util"
 	"github.com/glifio/go-pools/abigen"
 	"github.com/glifio/go-pools/constants"
 	"github.com/spf13/cobra"
@@ -73,6 +73,8 @@ var agentAutopilotCmd = &cobra.Command{
 
 				pullFundsEnabled := viper.GetBool("autopilot.pullfunds.enabled")
 				pullFundsFactor := viper.GetInt("autopilot.pullfunds.pull-amount-factor")
+				log.Println("pullfunds: ", pullFundsEnabled)
+				log.Println("pullfunds-factor: ", pullFundsFactor)
 
 				//TODO: maybe change frequency to max debt or max epoch difference
 				frequency := viper.GetFloat64("autopilot.frequency")
@@ -120,7 +122,13 @@ var agentAutopilotCmd = &cobra.Command{
 							goto SLEEP
 						}
 
-						if pull, err := needToPullFunds(cmd, payAmt); pull && err == nil {
+						pull, err := needToPullFunds(cmd, payAmt)
+						if err != nil {
+							log.Println(err)
+							goto SLEEP
+						}
+
+						if pull {
 							factoredPullAmt := big.NewInt(0).Mul(payAmt, big.NewInt(int64(pullFundsFactor)))
 							miner, ok, err := chooseMiner(cmd, factoredPullAmt)
 							if err != nil {
@@ -140,6 +148,7 @@ var agentAutopilotCmd = &cobra.Command{
 						}
 
 					}
+
 					_, err = pay(cmd, payargs, paymentType, true)
 					if err != nil {
 						log.Println(err)
@@ -179,16 +188,31 @@ func needToPullFunds(cmd *cobra.Command, payAmt *big.Int) (bool, error) {
 	}
 	defer closer()
 
-	ks := util.KeyStore()
-	_, operatorFevm, err := ks.GetAddrs(util.OperatorKey)
+	agentAddr, _, _, err := commonOwnerOrOperatorSetup(cmd)
 	if err != nil {
 		return false, err
 	}
 
-	bal, err := lapi.WalletBalance(cmd.Context(), operatorFevm)
+	agentAddrEthType, err := ethtypes.ParseEthAddress(agentAddr.String())
 	if err != nil {
 		return false, err
 	}
+
+	agentAddrDel, err := agentAddrEthType.ToFilecoinAddress()
+	if err != nil {
+		return false, err
+	}
+
+	agentFILIDAddr, err := lapi.StateLookupID(cmd.Context(), agentAddrDel, types.EmptyTSK)
+	if err != nil {
+		return false, err
+	}
+
+	actor, err := lapi.StateGetActor(cmd.Context(), agentFILIDAddr, types.EmptyTSK)
+	if err != nil {
+		return false, err
+	}
+	bal := actor.Balance
 
 	return payAmt.Cmp(bal.Int) > 0, nil
 }
@@ -235,7 +259,7 @@ func chooseMiner(cmd *cobra.Command, requiredFunds *big.Int) (address.Address, b
 		return address.Address{}, false, err
 	}
 
-	miners, err := PoolsSDK.Query().AgentMiners(cmd.Context(), agentAddr)
+	miners, err := PoolsSDK.Query().AgentMiners(cmd.Context(), agentAddr, nil)
 	if err != nil {
 		return address.Address{}, false, err
 	}
