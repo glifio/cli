@@ -74,6 +74,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	fmt.Println("Jim initConfig 1")
 	if cfgDir != "" {
 		viper.AddConfigPath(cfgDir)
 	} else if os.Getenv("GLIF_CONFIG_DIR") != "" {
@@ -92,6 +93,7 @@ func initConfig() {
 		viper.AddConfigPath(cfgDir)
 		viper.AddConfigPath(".")
 	}
+	fmt.Println("Jim initConfig 2")
 
 	viper.SetConfigType("toml")
 	viper.SetConfigName("config")
@@ -101,16 +103,20 @@ func initConfig() {
 		logFatal(err)
 	}
 
+	fmt.Println("Jim initConfig 3")
 	if err := util.NewKeyStore(fmt.Sprintf("%s/keys.toml", cfgDir)); err != nil {
 		logFatal(err)
 	}
 
+	fmt.Println("Jim initConfig 4")
 	if err := util.NewAgentStore(fmt.Sprintf("%s/agent.toml", cfgDir)); err != nil {
 		logFatal(err)
 	}
 
+	fmt.Println("Jim initConfig 5")
 	viper.AutomaticEnv() // read in environment variables that match
 
+	fmt.Println("Jim initConfig 6")
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -122,9 +128,11 @@ func initConfig() {
 			logFatalf("Config file error: %v\n", err)
 		}
 	}
+	fmt.Println("Jim initConfig 7")
 
 	viper.WatchConfig()
 
+	fmt.Println("Jim initConfig 8")
 	daemonURL := viper.GetString("daemon.rpc-url")
 	daemonToken := viper.GetString("daemon.token")
 	adoURL := viper.GetString("ado.address")
@@ -132,13 +140,16 @@ func initConfig() {
 	if chainID == constants.LocalnetChainID || chainID == constants.AnvilChainID {
 		routerAddr := viper.GetString("routes.router")
 		router := common.HexToAddress(routerAddr)
+		fmt.Println("Jim initConfig 9")
 		err := sdk.LazyInit(context.Background(), &PoolsSDK, router, adoURL, "Mock", daemonURL, daemonToken)
 		if err != nil {
+			fmt.Println("Jim initConfig 10")
 			logFatal(err)
 		}
 		return
 	}
 
+	fmt.Println("Jim initConfig 11")
 	var extern types.Extern
 	switch chainID {
 	case constants.MainnetChainID:
@@ -149,6 +160,7 @@ func initConfig() {
 		logFatalf("Unknown chain id %d", chainID)
 	}
 
+	fmt.Println("Jim initConfig 12")
 	if daemonURL != "" {
 		extern.LotusDialAddr = daemonURL
 	}
@@ -160,9 +172,12 @@ func initConfig() {
 		extern.AdoAddr = adoURL
 	}
 
+	fmt.Println("Jim initConfig 13")
 	sdk, err := sdk.New(context.Background(), big.NewInt(chainID), extern)
 	if err != nil {
+		fmt.Println("Jim initConfig 14")
 		logFatalf("Failed to initialize pools sdk %s", err)
 	}
+	fmt.Println("Jim initConfig 15")
 	PoolsSDK = sdk
 }

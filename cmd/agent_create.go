@@ -18,9 +18,12 @@ var createCmd = &cobra.Command{
 	Short: "Create a Glif agent",
 	Long:  `Spins up a new Agent contract through the Agent Factory, passing the owner, operator, and requestor addresses.`,
 	Run: func(cmd *cobra.Command, args []string) {
+    fmt.Println("Jim0")
 		ks := util.KeyStore()
+    fmt.Println("Jim0.1")
 		as := util.AgentStore()
 
+    fmt.Println("Jim1")
 		// Check if an agent already exists
 		addressStr, err := as.Get("address")
 		if err != nil && err != util.ErrKeyNotFound {
@@ -30,16 +33,19 @@ var createCmd = &cobra.Command{
 			logFatalf("Agent already exists: %s", addressStr)
 		}
 
+    fmt.Println("Jim2")
 		ownerAddr, _, err := ks.GetAddrs(util.OwnerKey)
 		if err != nil {
 			logFatal(err)
 		}
 
+    fmt.Println("Jim3")
 		operatorAddr, _, err := ks.GetAddrs(util.OperatorKey)
 		if err != nil {
 			logFatal(err)
 		}
 
+    fmt.Println("Jim4")
 		requestAddr, _, err := ks.GetAddrs(util.RequestKey)
 		if err != nil {
 			logFatal(err)
@@ -49,11 +55,13 @@ var createCmd = &cobra.Command{
 			logFatal("Keys not found. Please check your `keys.toml` file")
 		}
 
+    fmt.Println("Jim5")
 		pk, err := ks.GetPrivate(util.OwnerKey)
 		if err != nil {
 			logFatal(err)
 		}
 
+    fmt.Println("Jim6")
 		fmt.Printf("Creating agent, owner %s, operator %s, request %s", ownerAddr, operatorAddr, requestAddr)
 
 		s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
