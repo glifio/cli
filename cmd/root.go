@@ -141,6 +141,7 @@ func initConfig() {
 		routerAddr := viper.GetString("routes.router")
 		router := common.HexToAddress(routerAddr)
 		fmt.Println("Jim initConfig 9")
+		fmt.Println("Jim initConfig daemonURL", daemonURL)
 		err := sdk.LazyInit(context.Background(), &PoolsSDK, router, adoURL, "Mock", daemonURL, daemonToken)
 		if err != nil {
 			fmt.Println("Jim initConfig 10")
