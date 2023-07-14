@@ -59,37 +59,9 @@ func pay(cmd *cobra.Command, args []string, paymentType PaymentType, daemon bool
 		return nil, err
 	}
 
-	var payAmt *big.Int
-
-	switch paymentType {
-	case Principal:
-		amount, err := parseFILAmount(args[0])
-		if err != nil {
-			return nil, err
-		}
-
-		amountOwed, _, err := PoolsSDK.Query().AgentOwes(cmd.Context(), agentAddr)
-		if err != nil {
-			return nil, err
-		}
-
-		payAmt = new(big.Int).Add(amount, amountOwed)
-	case ToCurrent:
-		amountOwed, _, err := PoolsSDK.Query().AgentOwes(cmd.Context(), agentAddr)
-		if err != nil {
-			return nil, err
-		}
-
-		payAmt = amountOwed
-	case Custom:
-		amount, err := parseFILAmount(args[0])
-		if err != nil {
-			return nil, err
-		}
-
-		payAmt = amount
-	default:
-		return nil, fmt.Errorf("invalid payment type: %s", paymentType)
+	payAmt, err := payAmount(cmd, args, paymentType)
+	if err != nil {
+		return nil, err
 	}
 
 	poolName := cmd.Flag("pool-name").Value.String()
@@ -130,6 +102,50 @@ func pay(cmd *cobra.Command, args []string, paymentType PaymentType, daemon bool
 	}
 
 	s.Stop()
+
+	return payAmt, nil
+}
+
+// payAmount takes a string amount of FIL as the first value in args and
+// returns a *big.Int in attoFIL based on the paymentType specified
+func payAmount(cmd *cobra.Command, args []string, paymentType PaymentType) (*big.Int, error) {
+	agentAddr, _, _, err := commonOwnerOrOperatorSetup(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	var payAmt *big.Int
+
+	switch paymentType {
+	case Principal:
+		amount, err := parseFILAmount(args[0])
+		if err != nil {
+			return nil, err
+		}
+
+		amountOwed, _, err := PoolsSDK.Query().AgentOwes(cmd.Context(), agentAddr)
+		if err != nil {
+			return nil, err
+		}
+
+		payAmt = new(big.Int).Add(amount, amountOwed)
+	case ToCurrent:
+		amountOwed, _, err := PoolsSDK.Query().AgentOwes(cmd.Context(), agentAddr)
+		if err != nil {
+			return nil, err
+		}
+
+		payAmt = amountOwed
+	case Custom:
+		amount, err := parseFILAmount(args[0])
+		if err != nil {
+			return nil, err
+		}
+
+		payAmt = amount
+	default:
+		return nil, fmt.Errorf("invalid payment type: %s", paymentType)
+	}
 
 	return payAmt, nil
 }

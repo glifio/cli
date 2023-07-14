@@ -291,6 +291,8 @@ func parsePoolType(pool string) (*big.Int, error) {
 	return big.NewInt(int64(poolType)), nil
 }
 
+// parseFILAmount takes a string amount of FIL and returns
+// that amount as a *big.Int in attoFIL
 func parseFILAmount(amount string) (*big.Int, error) {
 	amt, ok := new(big.Float).SetString(amount)
 	if !ok {
