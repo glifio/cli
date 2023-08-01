@@ -28,11 +28,8 @@ var createCmd = &cobra.Command{
 		backends := []accounts.Backend{}
 
 		var useLedger bool
-		var ledgerAccount accounts.Account
-		var wallet accounts.Wallet
 
 		ownerWalletURL, _ := as.Get("owner-wallet-url")
-		fmt.Println("Jim ownerWalletURL", ownerWalletURL)
 		if ownerWalletURL != "" {
 			url, err := url.Parse(ownerWalletURL)
 			if err != nil {
@@ -43,7 +40,6 @@ var createCmd = &cobra.Command{
 			}
 		}
 		if useLedger {
-			fmt.Println("Jim useLedger")
 			ledgerhub, err := usbwallet.NewLedgerHub()
 			if err != nil {
 				logFatal("Ledger not found")
@@ -53,20 +49,16 @@ var createCmd = &cobra.Command{
 			if len(wallets) == 0 {
 				logFatal("No wallets found")
 			}
-			wallet = wallets[0]
+			wallet := wallets[0]
 			pathstr := "m/44'/60'/0'/0/0"
 			path, _ := accounts.ParseDerivationPath(pathstr)
-			fmt.Println("Jim2", path)
 			err = wallet.Open("")
 			if err == nil {
-				fmt.Println("Jim3")
-				ledgerAccount, err = wallet.Derive(path, true)
+				_, err = wallet.Derive(path, true)
 			}
 			if err != nil {
-				fmt.Println("Jim4 err")
 				logFatal(err)
 			}
-			fmt.Printf("Jim5 wallet %+v\n", wallet)
 		} else {
 			ks := util.KeyStore()
 			backends = append(backends, ks)
@@ -98,17 +90,7 @@ var createCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		var account accounts.Account
-
-		if useLedger {
-			if ledgerAccount.Address == ownerAddr {
-				account = ledgerAccount
-			} else {
-				logFatal("Ledger doesn't match owner address")
-			}
-		} else {
-			account = accounts.Account{Address: ownerAddr}
-		}
+		account := accounts.Account{Address: ownerAddr}
 
 		var passphrase string
 		var envSet bool
@@ -123,11 +105,9 @@ var createCmd = &cobra.Command{
 			}
 		}
 
-		if !useLedger {
-			wallet, err = manager.Find(account)
-			if err != nil {
-				logFatal(err)
-			}
+		wallet, err := manager.Find(account)
+		if err != nil {
+			logFatal(err)
 		}
 		fmt.Printf("Jim Wallet %+v\n", wallet)
 		fmt.Printf("Jim Account %+v\n", account)
