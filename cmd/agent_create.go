@@ -5,12 +5,14 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/usbwallet"
 	"github.com/glifio/cli/util"
 	"github.com/spf13/cobra"
 )
@@ -23,9 +25,53 @@ var createCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		as := util.AgentStore()
 		ksLegacy := util.KeyStoreLegacy()
-		ks := util.KeyStore()
 		backends := []accounts.Backend{}
-		backends = append(backends, ks)
+
+		var useLedger bool
+		var ledgerAccount accounts.Account
+		var wallet accounts.Wallet
+
+		ownerWalletURL, _ := as.Get("owner-wallet-url")
+		fmt.Println("Jim ownerWalletURL", ownerWalletURL)
+		if ownerWalletURL != "" {
+			url, err := url.Parse(ownerWalletURL)
+			if err != nil {
+				logFatal(err)
+			}
+			if url.Scheme == "ledger" {
+				useLedger = true
+			}
+		}
+		if useLedger {
+			fmt.Println("Jim useLedger")
+			ledgerhub, err := usbwallet.NewLedgerHub()
+			if err != nil {
+				logFatal("Ledger not found")
+			}
+			backends = append(backends, ledgerhub)
+			wallets := ledgerhub.Wallets()
+			if len(wallets) == 0 {
+				logFatal("No wallets found")
+			}
+			wallet = wallets[0]
+			pathstr := "m/44'/60'/0'/0/0"
+			path, _ := accounts.ParseDerivationPath(pathstr)
+			fmt.Println("Jim2", path)
+			err = wallet.Open("")
+			if err == nil {
+				fmt.Println("Jim3")
+				ledgerAccount, err = wallet.Derive(path, true)
+			}
+			if err != nil {
+				fmt.Println("Jim4 err")
+				logFatal(err)
+			}
+			fmt.Printf("Jim5 wallet %+v\n", wallet)
+		} else {
+			ks := util.KeyStore()
+			backends = append(backends, ks)
+		}
+
 		manager := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}, backends...)
 
 		// Check if an agent already exists
@@ -52,18 +98,39 @@ var createCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		account := accounts.Account{Address: ownerAddr}
-		passphrase, envSet := os.LookupEnv("GLIF_OWNER_PASSPHRASE")
-		if !envSet {
-			prompt := &survey.Password{
-				Message: "Owner key passphrase",
+		var account accounts.Account
+
+		if useLedger {
+			if ledgerAccount.Address == ownerAddr {
+				account = ledgerAccount
+			} else {
+				logFatal("Ledger doesn't match owner address")
 			}
-			survey.AskOne(prompt, &passphrase)
+		} else {
+			account = accounts.Account{Address: ownerAddr}
 		}
-		wallet, err := manager.Find(account)
-		if err != nil {
-			logFatal(err)
+
+		var passphrase string
+		var envSet bool
+
+		if !useLedger {
+			passphrase, envSet = os.LookupEnv("GLIF_OWNER_PASSPHRASE")
+			if !envSet {
+				prompt := &survey.Password{
+					Message: "Owner key passphrase",
+				}
+				survey.AskOne(prompt, &passphrase)
+			}
 		}
+
+		if !useLedger {
+			wallet, err = manager.Find(account)
+			if err != nil {
+				logFatal(err)
+			}
+		}
+		fmt.Printf("Jim Wallet %+v\n", wallet)
+		fmt.Printf("Jim Account %+v\n", account)
 
 		if util.IsZeroAddress(ownerAddr) || util.IsZeroAddress(operatorAddr) || util.IsZeroAddress(requestAddr) {
 			logFatal("Keys not found. Please check your `keys.toml` file")

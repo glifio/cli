@@ -4,10 +4,13 @@ Copyright © 2023 Glif LTD
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/usbwallet"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/glifio/cli/util"
@@ -39,16 +42,45 @@ var newCmd = &cobra.Command{
 		requestAddr, _, err := ksLegacy.GetAddrs(util.RequestKey)
 		panicIfKeyExists(util.RequestKey, requestAddr, err)
 
-		ownerPassphrase, envSet := os.LookupEnv("GLIF_OWNER_PASSPHRASE")
-		if !envSet {
-			prompt := &survey.Password{
-				Message: "Please type a passphrase to encrypt your owner private key",
+		useLedger, _ := cmd.Flags().GetBool("ledger")
+
+		var owner accounts.Account
+
+		if !useLedger {
+			ownerPassphrase, envSet := os.LookupEnv("GLIF_OWNER_PASSPHRASE")
+			if !envSet {
+				prompt := &survey.Password{
+					Message: "Please type a passphrase to encrypt your owner private key",
+				}
+				survey.AskOne(prompt, &ownerPassphrase)
 			}
-			survey.AskOne(prompt, &ownerPassphrase)
-		}
-		owner, err := ks.NewAccount(ownerPassphrase)
-		if err != nil {
-			logFatal(err)
+			owner, err = ks.NewAccount(ownerPassphrase)
+			if err != nil {
+				logFatal(err)
+			}
+		} else {
+			fmt.Println("Jim1")
+			ledgerhub, err := usbwallet.NewLedgerHub()
+			if err != nil {
+				logFatal("Ledger not found")
+			}
+			wallets := ledgerhub.Wallets()
+			if len(wallets) == 0 {
+				logFatal("No wallets found")
+			}
+			wallet := wallets[0]
+			pathstr := "m/44'/60'/0'/0/0"
+			path, _ := accounts.ParseDerivationPath(pathstr)
+			fmt.Println("Jim2", path)
+			err = wallet.Open("")
+			if err == nil {
+				owner, err = wallet.Derive(path, false)
+			}
+			if err != nil {
+				fmt.Println(err)
+				logFatal("Ledger needs to be in Ethereum app with browser support off")
+			}
+			fmt.Println("Jim3", owner)
 		}
 
 		operatorPassphrase := os.Getenv("GLIF_OPERATOR_PASSPHRASE")
@@ -63,6 +95,7 @@ var newCmd = &cobra.Command{
 		}
 
 		as.Set(string(util.OwnerKey), owner.Address.String())
+		as.Set("owner-wallet-url", owner.URL.String())
 		as.Set(string(util.OperatorKey), operator.Address.String())
 
 		if err := ksLegacy.SetKey(util.RequestKey, requestPrivateKey); err != nil {
@@ -96,4 +129,5 @@ var newCmd = &cobra.Command{
 
 func init() {
 	walletCmd.AddCommand(newCmd)
+	newCmd.Flags().Bool("ledger", false, "Use Ledger hardware wallet for owner")
 }
