@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/ethereum/go-ethereum/accounts"
+	ethaccounts "github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/filecoin-project/go-address"
@@ -26,6 +26,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/glifio/cli/util"
 	denoms "github.com/glifio/go-pools/util"
+	"github.com/glifio/go-wallet-utils/accounts"
 	"github.com/spf13/cobra"
 )
 
@@ -197,9 +198,9 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 
 	as := util.AgentStore()
 	ks := util.KeyStore()
-	backends := []accounts.Backend{}
+	backends := []ethaccounts.Backend{}
 	backends = append(backends, ks)
-	manager := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}, backends...)
+	manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, []accounts.Backend{})
 
 	opEvm, opFevm, err := as.GetAddrs(util.OperatorKey)
 	if err != nil {
@@ -243,7 +244,7 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
 
-	account = accounts.Account{Address: fromAddress}
+	account = accounts.Account{EthAccount: ethaccounts.Account{Address: fromAddress}}
 	wallet, err = manager.Find(account)
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
@@ -259,7 +260,7 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 		message = "Operator key passphrase"
 	}
 	if !envSet {
-		err = ks.Unlock(account, "")
+		err = ks.Unlock(account.EthAccount, "")
 		if err != nil {
 			prompt := &survey.Password{Message: message}
 			survey.AskOne(prompt, &passphrase)
@@ -282,7 +283,7 @@ func getRequesterKey(as *util.AgentStorage, ks *keystore.KeyStore) (*ecdsa.Priva
 	if err != nil {
 		return nil, err
 	}
-	requesterAccount := accounts.Account{Address: requesterAddr}
+	requesterAccount := ethaccounts.Account{Address: requesterAddr}
 	requesterKeyJSON, err := ks.Export(requesterAccount, "", "")
 	if err != nil {
 		return nil, err

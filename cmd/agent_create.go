@@ -10,8 +10,9 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
-	"github.com/ethereum/go-ethereum/accounts"
+	ethaccounts "github.com/ethereum/go-ethereum/accounts"
 	"github.com/glifio/cli/util"
+	"github.com/glifio/go-wallet-utils/accounts"
 	"github.com/spf13/cobra"
 )
 
@@ -23,9 +24,10 @@ var createCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		as := util.AgentStore()
 		ks := util.KeyStore()
-		backends := []accounts.Backend{}
+		backends := []ethaccounts.Backend{}
 		backends = append(backends, ks)
-		manager := accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}, backends...)
+		filBackends := []accounts.Backend{}
+		manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, filBackends)
 
 		// Check if an agent already exists
 		addressStr, err := as.Get("address")
@@ -51,7 +53,7 @@ var createCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		account := accounts.Account{Address: ownerAddr}
+		account := accounts.Account{EthAccount: ethaccounts.Account{Address: ownerAddr}}
 		passphrase, envSet := os.LookupEnv("GLIF_OWNER_PASSPHRASE")
 		if !envSet {
 			prompt := &survey.Password{

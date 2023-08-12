@@ -24,7 +24,7 @@ var depositFILCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		receiver := senderAccount.Address
+		receiver := senderAccount.EthAccount.Address
 
 		amount, err := parseFILAmount(args[0])
 		if err != nil {

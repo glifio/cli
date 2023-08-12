@@ -73,7 +73,7 @@ var forwardFIL = &cobra.Command{
 		defer journal.Close()
 		defer journal.RecordEvent(forwardFILevt, func() interface{} { return evt })
 
-		nonce, err := PoolsSDK.Query().ChainGetNonce(cmd.Context(), senderAccount.Address)
+		nonce, err := PoolsSDK.Query().ChainGetNonce(cmd.Context(), senderAccount.EthAccount.Address)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
