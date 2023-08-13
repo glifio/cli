@@ -10,6 +10,8 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/glifio/cli/util"
+	"github.com/glifio/go-wallet-utils/accounts"
+	"github.com/glifio/go-wallet-utils/usbwallet"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -43,16 +45,35 @@ var newCmd = &cobra.Command{
 		requestAddr, _, err := as.GetAddrs(util.RequestKey)
 		panicIfKeyExists(util.RequestKey, requestAddr, err)
 
-		ownerPassphrase, envSet := os.LookupEnv("GLIF_OWNER_PASSPHRASE")
-		if !envSet {
-			prompt := &survey.Password{
-				Message: "Please type a passphrase to encrypt your owner private key",
+		useLedger, _ := cmd.Flags().GetBool("ledger")
+
+		var owner accounts.Account
+
+		if !useLedger {
+			ownerPassphrase, envSet := os.LookupEnv("GLIF_OWNER_PASSPHRASE")
+			if !envSet {
+				prompt := &survey.Password{
+					Message: "Please type a passphrase to encrypt your owner private key",
+				}
+				survey.AskOne(prompt, &ownerPassphrase)
 			}
-			survey.AskOne(prompt, &ownerPassphrase)
-		}
-		owner, err := ks.NewAccount(ownerPassphrase)
-		if err != nil {
-			logFatal(err)
+			ksOwner, err := ks.NewAccount(ownerPassphrase)
+			if err != nil {
+				logFatal(err)
+			}
+			owner = accounts.Account{EthAccount: ksOwner}
+		} else {
+			ledgerhub, err := usbwallet.NewLedgerHub()
+			if err != nil {
+				logFatal("Ledger not found")
+			}
+			wallets := ledgerhub.Wallets()
+			if len(wallets) == 0 {
+				logFatal("No wallets found")
+			}
+			wallet := wallets[0]
+			accounts := wallet.Accounts()
+			owner = accounts[0]
 		}
 
 		operatorPassphrase := os.Getenv("GLIF_OPERATOR_PASSPHRASE")
@@ -66,7 +87,7 @@ var newCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		as.Set(string(util.OwnerKey), owner.Address.String())
+		as.Set(string(util.OwnerKey), owner.String())
 		as.Set(string(util.OperatorKey), operator.Address.String())
 		as.Set(string(util.RequestKey), requester.Address.String())
 
@@ -97,4 +118,5 @@ var newCmd = &cobra.Command{
 
 func init() {
 	walletCmd.AddCommand(newCmd)
+	newCmd.Flags().Bool("ledger", false, "Use Ledger hardware wallet for owner")
 }

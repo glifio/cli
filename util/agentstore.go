@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -93,14 +94,26 @@ func mapkey(keytype KeyType, key string) string {
 }
 
 func (a *AgentStorage) GetAddrs(key KeyType) (common.Address, address.Address, error) {
-	evmAddress := common.HexToAddress(a.data[string(key)])
+	value := a.data[string(key)]
 
-	delegated, err := DelegatedFromEthAddr(evmAddress)
-	if err != nil {
-		return evmAddress, address.Address{}, err
+	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
+	if re.MatchString(value) {
+		evmAddress := common.HexToAddress(value)
+
+		delegated, err := DelegatedFromEthAddr(evmAddress)
+		if err != nil {
+			return evmAddress, address.Address{}, err
+		}
+
+		return evmAddress, delegated, nil
+	} else {
+		filAddr, err := address.NewFromString(value)
+		if err != nil {
+			return common.Address{}, address.Address{}, err
+		}
+		return common.Address{}, filAddr, nil
 	}
 
-	return evmAddress, delegated, nil
 }
 
 func DelegatedFromEthAddr(addr common.Address) (address.Address, error) {
