@@ -9,6 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/lotus/api"
+	ltypes "github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/glifio/go-pools/types"
 )
@@ -93,7 +95,7 @@ func mapkey(keytype KeyType, key string) string {
 	return fmt.Sprintf("%s-%s", string(keytype), key)
 }
 
-func (a *AgentStorage) GetAddrs(key KeyType) (common.Address, address.Address, error) {
+func (a *AgentStorage) GetAddrs(key KeyType, lapi *api.FullNodeStruct) (common.Address, address.Address, error) {
 	value := a.data[string(key)]
 
 	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
@@ -111,9 +113,25 @@ func (a *AgentStorage) GetAddrs(key KeyType) (common.Address, address.Address, e
 		if err != nil {
 			return common.Address{}, address.Address{}, err
 		}
-		return common.Address{}, filAddr, nil
-	}
+		if lapi == nil {
+			return common.Address{}, filAddr, nil
+		}
+		idAddr, err := lapi.StateLookupID(context.Background(), filAddr, ltypes.EmptyTSK)
+		if err != nil {
+			if err.Error() == "actor not found" {
+				// Actor hasn't been funded yet
+				return common.Address{}, filAddr, nil
+			}
+			return common.Address{}, address.Address{}, err
+		}
+		ethAddrLotus, err := ethtypes.EthAddressFromFilecoinAddress(idAddr)
+		if err != nil {
+			return common.Address{}, address.Address{}, err
+		}
+		ethAddr := common.HexToAddress(ethAddrLotus.String())
 
+		return ethAddr, filAddr, nil
+	}
 }
 
 func DelegatedFromEthAddr(addr common.Address) (address.Address, error) {

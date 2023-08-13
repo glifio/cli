@@ -30,19 +30,24 @@ func panicIfKeyExists(key util.KeyType, addr common.Address, err error) {
 var newCmd = &cobra.Command{
 	Use:   "new",
 	Short: "Create a set of keys",
-	Long:  `Creates an owner, an operator, and a requester key and stores the values in $HOME/.config/glif/keys.toml. Note that the owner and requester keys are only applicable to Agents, the operator key is the primary key for interacting with smart contracts.`,
+	Long:  `Creates an owner, an operator, and a requester key and stores the values in the keystore. Note that the owner and requester keys are only applicable to Agents, the operator key is the primary key for interacting with smart contracts.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		lapi, closer, err := PoolsSDK.Extern().ConnectLotusClient()
+		if err != nil {
+			logFatalf("Failed to instantiate eth client %s", err)
+		}
+		defer closer()
 
 		as := util.AgentStore()
 		ks := util.KeyStore()
 
-		ownerAddr, _, err := as.GetAddrs(util.OwnerKey)
+		ownerAddr, _, err := as.GetAddrs(util.OwnerKey, nil)
 		panicIfKeyExists(util.OwnerKey, ownerAddr, err)
 
-		operatorAddr, _, err := as.GetAddrs(util.OperatorKey)
+		operatorAddr, _, err := as.GetAddrs(util.OperatorKey, nil)
 		panicIfKeyExists(util.OperatorKey, operatorAddr, err)
 
-		requestAddr, _, err := as.GetAddrs(util.RequestKey)
+		requestAddr, _, err := as.GetAddrs(util.RequestKey, nil)
 		panicIfKeyExists(util.RequestKey, requestAddr, err)
 
 		useLedger, _ := cmd.Flags().GetBool("ledger")
@@ -95,22 +100,7 @@ var newCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		ownerAddr, ownerDelAddr, err := as.GetAddrs(util.OwnerKey)
-		if err != nil {
-			logFatal(err)
-		}
-		operatorAddr, operatorDelAddr, err := as.GetAddrs(util.OperatorKey)
-		if err != nil {
-			logFatal(err)
-		}
-		requestAddr, requestDelAddr, err := as.GetAddrs(util.RequestKey)
-		if err != nil {
-			logFatal(err)
-		}
-
-		log.Printf("Owner address: %s (ETH), %s (FIL)\n", ownerAddr, ownerDelAddr)
-		log.Printf("Operator address: %s (ETH), %s (FIL)\n", operatorAddr, operatorDelAddr)
-		log.Printf("Request key: %s (ETH), %s (FIL)\n", requestAddr, requestDelAddr)
+		listAddresses(lapi)
 		log.Println()
 		log.Println("Please make sure to fund your Owner Address with FIL before creating an Agent")
 	},

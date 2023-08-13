@@ -38,17 +38,17 @@ var createCmd = &cobra.Command{
 			logFatalf("Agent already exists: %s", addressStr)
 		}
 
-		ownerAddr, _, err := as.GetAddrs(util.OwnerKey)
+		ownerAddr, _, err := as.GetAddrs(util.OwnerKey, nil)
 		if err != nil {
 			logFatal(err)
 		}
 
-		operatorAddr, _, err := as.GetAddrs(util.OperatorKey)
+		operatorAddr, _, err := as.GetAddrs(util.OperatorKey, nil)
 		if err != nil {
 			logFatal(err)
 		}
 
-		requestAddr, _, err := as.GetAddrs(util.RequestKey)
+		requestAddr, _, err := as.GetAddrs(util.RequestKey, nil)
 		if err != nil {
 			logFatal(err)
 		}

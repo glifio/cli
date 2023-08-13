@@ -102,18 +102,24 @@ var balCmd = &cobra.Command{
 	Use:   "balance",
 	Short: "Gets the balances associated with your owner and operator keys",
 	Run: func(cmd *cobra.Command, args []string) {
+		lapi, closer, err := PoolsSDK.Extern().ConnectLotusClient()
+		if err != nil {
+			logFatalf("Failed to instantiate eth client %s", err)
+		}
+		defer closer()
+
 		as := util.AgentStore()
-		ownerEvm, ownerFevm, err := as.GetAddrs(util.OwnerKey)
+		ownerEvm, ownerFevm, err := as.GetAddrs(util.OwnerKey, lapi)
 		if err != nil {
 			logFatal(err)
 		}
 
-		operatorEvm, operatorFevm, err := as.GetAddrs(util.OperatorKey)
+		operatorEvm, operatorFevm, err := as.GetAddrs(util.OperatorKey, nil)
 		if err != nil {
 			logFatal(err)
 		}
 
-		requestEvm, requestFevm, err := as.GetAddrs(util.RequestKey)
+		requestEvm, requestFevm, err := as.GetAddrs(util.RequestKey, nil)
 		if err != nil {
 			logFatal(err)
 		}

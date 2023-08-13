@@ -177,7 +177,8 @@ func parseAddress(ctx context.Context, addr string, lapi lotusapi.FullNode) (com
 func commonSetupOwnerCall() (agentAddr common.Address, ownerWallet accounts.Wallet, ownerAccount accounts.Account, ownerPassphrase string, requesterKey *ecdsa.PrivateKey, err error) {
 	as := util.AgentStore()
 
-	ownerAddr, _, err := as.GetAddrs(util.OwnerKey)
+	// FIXME: Handle Fil addresses
+	ownerAddr, _, err := as.GetAddrs(util.OwnerKey, nil)
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
@@ -202,12 +203,13 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 	backends = append(backends, ks)
 	manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, []accounts.Backend{})
 
-	opEvm, opFevm, err := as.GetAddrs(util.OperatorKey)
+	opEvm, opFevm, err := as.GetAddrs(util.OperatorKey, nil)
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
 
-	owEvm, owFevm, err := as.GetAddrs(util.OwnerKey)
+	// FIXME: Handle Fil addresses
+	owEvm, owFevm, err := as.GetAddrs(util.OwnerKey, nil)
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
@@ -279,7 +281,7 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 }
 
 func getRequesterKey(as *util.AgentStorage, ks *keystore.KeyStore) (*ecdsa.PrivateKey, error) {
-	requesterAddr, _, err := as.GetAddrs(util.RequestKey)
+	requesterAddr, _, err := as.GetAddrs(util.RequestKey, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -398,11 +400,11 @@ func checkWalletMigrated() error {
 	}
 
 	for _, key := range keys {
-		newAddr, _, err := as.GetAddrs(key)
+		newAddr, newFilAddr, err := as.GetAddrs(key, nil)
 		if err != nil {
 			return err
 		}
-		if util.IsZeroAddress(newAddr) {
+		if util.IsZeroAddress(newAddr) && newFilAddr.Empty() {
 			oldAddr, _, err := ksLegacy.GetAddrs(key)
 			if err != nil {
 				return err

@@ -30,7 +30,7 @@ var migrateCmd = &cobra.Command{
 		fmt.Printf("Please set a new passphrase to encrypt the owner key:\n\n")
 
 		as := util.AgentStore()
-		ownerAddr, _, err := as.GetAddrs(util.OwnerKey)
+		ownerAddr, _, err := as.GetAddrs(util.OwnerKey, nil)
 		if err != nil {
 			logFatal(err)
 		}
