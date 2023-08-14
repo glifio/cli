@@ -31,6 +31,11 @@ var forwardFIL = &cobra.Command{
 			logFatal(err)
 		}
 
+		lapi, lcloser, err := PoolsSDK.Extern().ConnectLotusClient()
+		if err != nil {
+			logFatal(err)
+		}
+		defer lcloser()
 		ethClient, err := PoolsSDK.Extern().ConnectEthClient()
 		if err != nil {
 			logFatal(err)
@@ -93,14 +98,14 @@ var forwardFIL = &cobra.Command{
 			logFatal(err)
 		}
 
-		// get the FilForwarder contract address
-		filf, err := abigen.NewFilForwarderTransactor(filForwardAddr, ethClient)
+		wrappedClient, auth, err := walletutils.NewWalletTransactor(ctx, lapi, ethClient, senderWallet, &senderAccount, senderPassphrase, chainID)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
 		}
 
-		auth, err := walletutils.NewWalletTransactor(senderWallet, &senderAccount, senderPassphrase, chainID)
+		// get the FilForwarder contract address
+		filf, err := abigen.NewFilForwarderTransactor(filForwardAddr, wrappedClient)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
