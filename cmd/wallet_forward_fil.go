@@ -100,7 +100,7 @@ var forwardFIL = &cobra.Command{
 			logFatal(err)
 		}
 
-		auth, err := walletutils.NewEthWalletTransactor(senderWallet, &senderAccount, senderPassphrase, chainID)
+		auth, err := walletutils.NewWalletTransactor(senderWallet, &senderAccount, senderPassphrase, chainID)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

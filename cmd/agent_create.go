@@ -11,8 +11,10 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
 	ethaccounts "github.com/ethereum/go-ethereum/accounts"
+	"github.com/filecoin-project/go-address"
 	"github.com/glifio/cli/util"
 	"github.com/glifio/go-wallet-utils/accounts"
+	"github.com/glifio/go-wallet-utils/usbwallet"
 	"github.com/spf13/cobra"
 )
 
@@ -24,10 +26,12 @@ var createCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		as := util.AgentStore()
 		ks := util.KeyStore()
-		backends := []ethaccounts.Backend{}
-		backends = append(backends, ks)
-		filBackends := []accounts.Backend{}
-		manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, filBackends)
+
+		lapi, closer, err := PoolsSDK.Extern().ConnectLotusClient()
+		if err != nil {
+			logFatalf("Failed to instantiate eth client %s", err)
+		}
+		defer closer()
 
 		// Check if an agent already exists
 		addressStr, err := as.Get("address")
@@ -38,7 +42,7 @@ var createCmd = &cobra.Command{
 			logFatalf("Agent already exists: %s", addressStr)
 		}
 
-		ownerAddr, _, err := as.GetAddrs(util.OwnerKey, nil)
+		ownerAddr, ownerFilAddr, err := as.GetAddrs(util.OwnerKey, lapi)
 		if err != nil {
 			logFatal(err)
 		}
@@ -53,21 +57,46 @@ var createCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		account := accounts.Account{EthAccount: ethaccounts.Account{Address: ownerAddr}}
-		passphrase, envSet := os.LookupEnv("GLIF_OWNER_PASSPHRASE")
-		if !envSet {
-			prompt := &survey.Password{
-				Message: "Owner key passphrase",
+		var account accounts.Account
+		var passphrase string
+
+		if ownerFilAddr.Protocol() == address.SECP256K1 {
+			if ownerFilAddr.Empty() {
+				logFatal("Owner key not found")
 			}
-			survey.AskOne(prompt, &passphrase)
+
+			account = accounts.Account{FilAddress: ownerFilAddr}
+		} else {
+			account = accounts.Account{EthAccount: ethaccounts.Account{Address: ownerAddr}}
+			var envSet bool
+			passphrase, envSet = os.LookupEnv("GLIF_OWNER_PASSPHRASE")
+			if !envSet {
+				prompt := &survey.Password{
+					Message: "Owner key passphrase",
+				}
+				survey.AskOne(prompt, &passphrase)
+			}
 		}
+
+		backends := []ethaccounts.Backend{}
+		backends = append(backends, ks)
+		filBackends := []accounts.Backend{}
+		if ownerFilAddr.Protocol() == address.SECP256K1 {
+			ledgerhub, err := usbwallet.NewLedgerHub()
+			if err != nil {
+				logFatal("Ledger not found")
+			}
+			filBackends = []accounts.Backend{ledgerhub}
+		}
+		manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, filBackends)
+
 		wallet, err := manager.Find(account)
 		if err != nil {
 			logFatal(err)
 		}
 
-		if util.IsZeroAddress(ownerAddr) || util.IsZeroAddress(operatorAddr) || util.IsZeroAddress(requestAddr) {
-			logFatal("Keys not found. Please check your `keys.toml` file")
+		if util.IsZeroAddress(requestAddr) {
+			logFatal("Requester key not found.")
 		}
 
 		fmt.Printf("Creating agent, owner %s, operator %s, request %s", ownerAddr, operatorAddr, requestAddr)

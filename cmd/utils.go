@@ -177,13 +177,12 @@ func parseAddress(ctx context.Context, addr string, lapi lotusapi.FullNode) (com
 func commonSetupOwnerCall() (agentAddr common.Address, ownerWallet accounts.Wallet, ownerAccount accounts.Account, ownerPassphrase string, requesterKey *ecdsa.PrivateKey, err error) {
 	as := util.AgentStore()
 
-	// FIXME: Handle Fil addresses
-	ownerAddr, _, err := as.GetAddrs(util.OwnerKey, nil)
+	_, ownerFilAddr, err := as.GetAddrs(util.OwnerKey, nil)
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
 
-	agentAddr, wallet, account, passphrase, requesterKey, err := commonOwnerOrOperatorSetup(context.Background(), ownerAddr.String())
+	agentAddr, wallet, account, passphrase, requesterKey, err := commonOwnerOrOperatorSetup(context.Background(), ownerFilAddr.String())
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
@@ -214,7 +213,9 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
 
-	var fromAddress common.Address
+	var fromEthAddress common.Address
+	var fromFilAddress address.Address
+
 	// if no flag was passed, we just use the operator address by default
 	// from := cmd.Flag("from").Value.String()
 	switch from {
@@ -224,16 +225,20 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 			return common.Address{}, nil, accounts.Account{}, "", nil, err
 		}
 		if funded {
-			fromAddress = opEvm
+			fromEthAddress = opEvm
 		} else {
 			log.Println("operator not funded, falling back to owner address")
-			fromAddress = owEvm
+			fromEthAddress = owEvm
 		}
 		if err != nil {
 			return common.Address{}, nil, accounts.Account{}, "", nil, err
 		}
 	case owEvm.String(), owFevm.String():
-		fromAddress = owEvm
+		if owFevm.Protocol() == address.Delegated {
+			fromEthAddress = owEvm
+		} else {
+			fromFilAddress = owFevm
+		}
 	default:
 		return common.Address{}, nil, accounts.Account{}, "", nil, errors.New("invalid from address")
 	}
@@ -246,7 +251,11 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
 	}
 
-	account = accounts.Account{EthAccount: ethaccounts.Account{Address: fromAddress}}
+	if !fromFilAddress.Empty() {
+		account = accounts.Account{FilAddress: fromFilAddress}
+	} else {
+		account = accounts.Account{EthAccount: ethaccounts.Account{Address: fromEthAddress}}
+	}
 	wallet, err = manager.Find(account)
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err
@@ -254,20 +263,22 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 
 	var envSet bool
 	var message string
-	if fromAddress == owEvm {
-		passphrase, envSet = os.LookupEnv("GLIF_OWNER_PASSPHRASE")
-		message = "Owner key passphrase"
-	} else if fromAddress == opEvm {
-		passphrase, envSet = os.LookupEnv("GLIF_OPERATOR_PASSPHRASE")
-		message = "Operator key passphrase"
-	}
-	if !envSet {
-		err = ks.Unlock(account.EthAccount, "")
-		if err != nil {
-			prompt := &survey.Password{Message: message}
-			survey.AskOne(prompt, &passphrase)
-			if passphrase == "" {
-				return common.Address{}, nil, accounts.Account{}, "", nil, fmt.Errorf("Aborted")
+	if fromFilAddress.Empty() {
+		if fromEthAddress == owEvm {
+			passphrase, envSet = os.LookupEnv("GLIF_OWNER_PASSPHRASE")
+			message = "Owner key passphrase"
+		} else if fromEthAddress == opEvm {
+			passphrase, envSet = os.LookupEnv("GLIF_OPERATOR_PASSPHRASE")
+			message = "Operator key passphrase"
+		}
+		if !envSet {
+			err = ks.Unlock(account.EthAccount, "")
+			if err != nil {
+				prompt := &survey.Password{Message: message}
+				survey.AskOne(prompt, &passphrase)
+				if passphrase == "" {
+					return common.Address{}, nil, accounts.Account{}, "", nil, fmt.Errorf("Aborted")
+				}
 			}
 		}
 	}
