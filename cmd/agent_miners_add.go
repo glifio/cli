@@ -68,7 +68,7 @@ var addCmd = &cobra.Command{
 		defer journal.Close()
 		defer journal.RecordEvent(addminerevt, func() interface{} { return evt })
 
-		tx, err := PoolsSDK.Act().AgentAddMiner(
+		txHash, _, err := PoolsSDK.Act().AgentAddMiner(
 			cmd.Context(),
 			agentAddr,
 			minerAddr,
@@ -81,10 +81,10 @@ var addCmd = &cobra.Command{
 			evt.Error = err.Error()
 			logFatal(err)
 		}
-		evt.Tx = tx.Hash().String()
+		evt.Tx = txHash.String()
 
 		// transaction landed on chain or errored
-		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

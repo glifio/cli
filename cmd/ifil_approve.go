@@ -40,12 +40,12 @@ var iFILApproveCmd = &cobra.Command{
 		s.Start()
 		defer s.Stop()
 
-		tx, err := PoolsSDK.Act().IFILApprove(ctx, addr, amt, senderWallet, senderAccount, senderPassphrase)
+		txHash, _, err := PoolsSDK.Act().IFILApprove(ctx, addr, amt, senderWallet, senderAccount, senderPassphrase)
 		if err != nil {
 			logFatalf("Failed to approve iFIL %s", err)
 		}
 
-		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, txHash)
 		if err != nil {
 			logFatalf("Failed to approve iFIL %s", err)
 		}

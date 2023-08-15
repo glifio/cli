@@ -45,15 +45,15 @@ var confirmWorker = &cobra.Command{
 		defer journal.Close()
 		defer journal.RecordEvent(confirmworkerevt, func() interface{} { return evt })
 
-		tx, err := PoolsSDK.Act().AgentConfirmMinerWorkerChange(cmd.Context(), agentAddr, minerAddr, ownerWallet, ownerAccount, ownerPassphrase)
+		txHash, _, err := PoolsSDK.Act().AgentConfirmMinerWorkerChange(cmd.Context(), agentAddr, minerAddr, ownerWallet, ownerAccount, ownerPassphrase)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
 		}
-		evt.Tx = tx.Hash().String()
+		evt.Tx = txHash.String()
 
 		// transaction landed on chain or errored
-		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

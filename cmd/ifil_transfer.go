@@ -40,7 +40,7 @@ var iFILTransferCmd = &cobra.Command{
 		s.Start()
 		defer s.Stop()
 
-		tx, err := PoolsSDK.Act().IFILTransfer(ctx, addr, amt, senderWallet, senderAccount, senderPassphrase)
+		txHash, _, err := PoolsSDK.Act().IFILTransfer(ctx, addr, amt, senderWallet, senderAccount, senderPassphrase)
 		if err != nil {
 			logFatalf("Failed to transfer iFIL %s", err)
 		}
@@ -51,7 +51,7 @@ var iFILTransferCmd = &cobra.Command{
 		}
 		defer eapi.Close()
 
-		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, txHash)
 		if err != nil {
 			logFatalf("Failed to transfer iFIL %s", err)
 		}

@@ -88,15 +88,15 @@ func pay(cmd *cobra.Command, args []string, paymentType PaymentType) (*big.Int, 
 	defer journal.Close()
 	defer journal.RecordEvent(payevt, func() interface{} { return evt })
 
-	tx, err := PoolsSDK.Act().AgentPay(ctx, agentAddr, poolID, payAmt, senderWallet, senderAccount, senderPassphrase, requesterKey)
+	txHash, _, err := PoolsSDK.Act().AgentPay(ctx, agentAddr, poolID, payAmt, senderWallet, senderAccount, senderPassphrase, requesterKey)
 	if err != nil {
 		evt.Error = err.Error()
 		return nil, err
 	}
-	evt.Tx = tx.Hash().String()
+	evt.Tx = txHash.String()
 
 	// transaction landed on chain or errored
-	_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+	_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 	if err != nil {
 		evt.Error = err.Error()
 		return nil, err

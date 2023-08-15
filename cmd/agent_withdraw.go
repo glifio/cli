@@ -57,14 +57,14 @@ var withdrawCmd = &cobra.Command{
 
 		fmt.Printf("Withdrawing %s FIL from your Agent", args[0])
 
-		tx, err := PoolsSDK.Act().AgentWithdraw(cmd.Context(), agentAddr, receiver, amount, ownerWallet, ownerAccount, ownerPassphrase, requesterKey)
+		txHash, _, err := PoolsSDK.Act().AgentWithdraw(cmd.Context(), agentAddr, receiver, amount, ownerWallet, ownerAccount, ownerPassphrase, requesterKey)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
 		}
-		evt.Tx = tx.Hash().String()
+		evt.Tx = txHash.String()
 
-		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

@@ -24,12 +24,12 @@ var refreshRoutesCmd = &cobra.Command{
 		s.Start()
 		defer s.Stop()
 
-		tx, err := PoolsSDK.Act().AgentRefreshRoutes(ctx, agentAddr, senderWallet, senderAccount, senderPassphrase)
+		txHash, _, err := PoolsSDK.Act().AgentRefreshRoutes(ctx, agentAddr, senderWallet, senderAccount, senderPassphrase)
 		if err != nil {
 			logFatalf("Failed to refresh routes %s", err)
 		}
 
-		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, txHash)
 		if err != nil {
 			logFatalf("Failed to refresh routes %s", err)
 		}

@@ -63,15 +63,15 @@ var rmCmd = &cobra.Command{
 
 		fmt.Printf("Removing miner %s from agent %s by changing its owner address to %s\n", minerAddr, agentAddr, newMinerOwnerAddr)
 
-		tx, err := PoolsSDK.Act().AgentRemoveMiner(cmd.Context(), agentAddr, minerAddr, newMinerOwnerAddr, ownerWallet, ownerAccount, ownerPassphrase, requesterKey)
+		txHash, _, err := PoolsSDK.Act().AgentRemoveMiner(cmd.Context(), agentAddr, minerAddr, newMinerOwnerAddr, ownerWallet, ownerAccount, ownerPassphrase, requesterKey)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
 		}
-		evt.Tx = tx.Hash().String()
+		evt.Tx = txHash.String()
 
 		// transaction landed on chain or errored
-		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

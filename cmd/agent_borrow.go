@@ -65,14 +65,14 @@ var borrowCmd = &cobra.Command{
 		defer journal.Close()
 		defer journal.RecordEvent(borrowevt, func() interface{} { return evt })
 
-		tx, err := PoolsSDK.Act().AgentBorrow(cmd.Context(), agentAddr, poolID, amount, ownerWallet, ownerAccount, ownerPassphrase, requesterKey)
+		txHash, _, err := PoolsSDK.Act().AgentBorrow(cmd.Context(), agentAddr, poolID, amount, ownerWallet, ownerAccount, ownerPassphrase, requesterKey)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
 		}
-		evt.Tx = tx.Hash().String()
+		evt.Tx = txHash.String()
 
-		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

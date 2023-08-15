@@ -106,7 +106,7 @@ var createCmd = &cobra.Command{
 		defer s.Stop()
 
 		// submit the agent create transaction
-		tx, err := PoolsSDK.Act().AgentCreate(
+		txHash, _, err := PoolsSDK.Act().AgentCreate(
 			cmd.Context(),
 			ownerAddr,
 			operatorAddr,
@@ -121,12 +121,12 @@ var createCmd = &cobra.Command{
 
 		s.Stop()
 
-		fmt.Printf("Agent create transaction submitted: %s\n", tx.Hash())
+		fmt.Printf("Agent create transaction submitted: %s\n", txHash)
 		fmt.Println("Waiting for confirmation...")
 
 		s.Start()
 		// transaction landed on chain or errored
-		receipt, err := PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+		receipt, err := PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 		if err != nil {
 			logFatalf("pools sdk: query: state wait receipt: %s", err)
 		}
@@ -144,7 +144,7 @@ var createCmd = &cobra.Command{
 
 		as.Set("id", id.String())
 		as.Set("address", addr.String())
-		as.Set("tx", tx.Hash().String())
+		as.Set("tx", txHash.String())
 	},
 }
 

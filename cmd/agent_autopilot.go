@@ -219,15 +219,15 @@ func pullFundsFromMiner(cmd *cobra.Command, miner address.Address, amount *big.I
 	}
 	defer journal.RecordEvent(pullevt, func() interface{} { return evt })
 
-	tx, err := PoolsSDK.Act().AgentPullFunds(cmd.Context(), agentAddr, amount, miner, senderWallet, senderAccount, senderPassphrase, requesterKey)
+	txHash, _, err := PoolsSDK.Act().AgentPullFunds(cmd.Context(), agentAddr, amount, miner, senderWallet, senderAccount, senderPassphrase, requesterKey)
 	if err != nil {
 		evt.Error = err.Error()
 		return err
 	}
-	evt.Tx = tx.Hash().String()
+	evt.Tx = txHash.String()
 
 	// transaction landed on chain or errored
-	_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), tx.Hash())
+	_, err = PoolsSDK.Query().StateWaitReceipt(cmd.Context(), txHash)
 	if err != nil {
 		evt.Error = err.Error()
 		return err

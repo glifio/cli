@@ -58,15 +58,15 @@ var exitCmd = &cobra.Command{
 		defer journal.Close()
 		defer journal.RecordEvent(exitevt, func() interface{} { return evt })
 
-		tx, err := PoolsSDK.Act().AgentPay(ctx, agentAddr, poolID, payAmount, senderWallet, senderAccount, senderPassphrase, requesterKey)
+		txHash, _, err := PoolsSDK.Act().AgentPay(ctx, agentAddr, poolID, payAmount, senderWallet, senderAccount, senderPassphrase, requesterKey)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)
 		}
-		evt.Tx = tx.Hash().String()
+		evt.Tx = txHash.String()
 
 		// transaction landed on chain or errored
-		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, tx.Hash())
+		_, err = PoolsSDK.Query().StateWaitReceipt(ctx, txHash)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

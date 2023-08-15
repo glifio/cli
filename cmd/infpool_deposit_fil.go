@@ -37,13 +37,13 @@ var depositFILCmd = &cobra.Command{
 		s.Start()
 		defer s.Stop()
 
-		tx, err := PoolsSDK.Act().InfPoolDepositFIL(ctx, receiver, amount, senderWallet, senderAccount, senderPassphrase)
+		txHash, _, err := PoolsSDK.Act().InfPoolDepositFIL(ctx, receiver, amount, senderWallet, senderAccount, senderPassphrase)
 		if err != nil {
 			logFatal(err)
 		}
 
 		// transaction landed on chain or errored
-		receipt, err := PoolsSDK.Query().StateWaitReceipt(ctx, tx.Hash())
+		receipt, err := PoolsSDK.Query().StateWaitReceipt(ctx, txHash)
 		if err != nil {
 			logFatal(err)
 		}
