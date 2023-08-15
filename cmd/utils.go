@@ -27,6 +27,7 @@ import (
 	"github.com/glifio/cli/util"
 	denoms "github.com/glifio/go-pools/util"
 	"github.com/glifio/go-wallet-utils/accounts"
+	"github.com/glifio/go-wallet-utils/usbwallet"
 	"github.com/spf13/cobra"
 )
 
@@ -198,9 +199,6 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 
 	as := util.AgentStore()
 	ks := util.KeyStore()
-	backends := []ethaccounts.Backend{}
-	backends = append(backends, ks)
-	manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, []accounts.Backend{})
 
 	opEvm, opFevm, err := as.GetAddrs(util.OperatorKey, nil)
 	if err != nil {
@@ -256,6 +254,19 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 	} else {
 		account = accounts.Account{EthAccount: ethaccounts.Account{Address: fromEthAddress}}
 	}
+
+	backends := []ethaccounts.Backend{}
+	backends = append(backends, ks)
+	filBackends := []accounts.Backend{}
+	if account.IsFil() {
+		ledgerhub, err := usbwallet.NewLedgerHub()
+		if err != nil {
+			logFatal("Ledger not found")
+		}
+		filBackends = []accounts.Backend{ledgerhub}
+	}
+	manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, filBackends)
+
 	wallet, err = manager.Find(account)
 	if err != nil {
 		return common.Address{}, nil, accounts.Account{}, "", nil, err

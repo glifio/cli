@@ -81,7 +81,7 @@ var createCmd = &cobra.Command{
 		backends := []ethaccounts.Backend{}
 		backends = append(backends, ks)
 		filBackends := []accounts.Backend{}
-		if ownerFilAddr.Protocol() == address.SECP256K1 {
+		if account.IsFil() {
 			ledgerhub, err := usbwallet.NewLedgerHub()
 			if err != nil {
 				logFatal("Ledger not found")
