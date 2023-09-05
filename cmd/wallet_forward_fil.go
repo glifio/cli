@@ -6,6 +6,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -86,6 +87,8 @@ var forwardFIL = &cobra.Command{
 			filForwardAddr = deploy.FilForwarder
 		case constants.CalibnetChainID:
 			filForwardAddr = deploy.TFilForwarder
+		case constants.LocalnetChainID:
+			filForwardAddr = common.HexToAddress(os.Getenv("GLIF_FIL_FORWARDER"))
 		default:
 			err = errors.New("unsupported chain id for forward-fil command")
 			evt.Error = err.Error()
