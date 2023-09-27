@@ -8,7 +8,11 @@ import (
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/filecoin-project/go-address"
+	filcrypto "github.com/filecoin-project/go-crypto"
 	"github.com/glifio/cli/util"
 	"github.com/glifio/go-wallet-utils/accounts"
 	"github.com/glifio/go-wallet-utils/usbwallet"
@@ -81,12 +85,25 @@ var newCmd = &cobra.Command{
 			walletAccounts := wallet.Accounts()
 
 			// Note: owner will be an msig, created in a separate step
-
 			ksOwnerProposer, err := ks.NewAccount("")
 			if err != nil {
 				logFatal(err)
 			}
-			ownerProposer := accounts.Account{EthAccount: ksOwnerProposer}
+			ownerProposerKeyJSON, err := ks.Export(ksOwnerProposer, "", "")
+			if err != nil {
+				logFatal(err)
+			}
+			opk, err := keystore.DecryptKey(ownerProposerKeyJSON, "")
+			if err != nil {
+				logFatal(err)
+			}
+			opkPrivateKeyBytes := crypto.FromECDSA(opk.PrivateKey)
+			ownerProposerPublicKey := filcrypto.PublicKey(opkPrivateKeyBytes)
+			ownerProposerFilAddr, err := address.NewSecp256k1Address(ownerProposerPublicKey)
+			if err != nil {
+				logFatal(err)
+			}
+			ownerProposer := accounts.Account{FilAddress: ownerProposerFilAddr}
 			as.Set(string(util.OwnerProposerKey), ownerProposer.String())
 
 			ownerApprover := walletAccounts[0]
