@@ -22,10 +22,14 @@ import (
 func getBalances(
 	ctx context.Context,
 	owner address.Address,
+	ownerProposer address.Address,
+	ownerApprover address.Address,
 	operator address.Address,
 	request address.Address,
 ) (
 	ownerBal *big.Float,
+	ownerProposerBal *big.Float,
+	ownerApproverBal *big.Float,
 	operatorBal *big.Float,
 	requesterBal *big.Float,
 	err error,
@@ -64,28 +68,34 @@ func getBalances(
 	defer s.Stop()
 
 	go getBalAsync(util.OwnerKey, owner)
+	go getBalAsync(util.OwnerProposerKey, ownerProposer)
+	go getBalAsync(util.OwnerApproverKey, ownerApprover)
 	go getBalAsync(util.OperatorKey, operator)
 	go getBalAsync(util.RequestKey, request)
 
 	s.Stop()
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		select {
 		case bal := <-balCh:
 			switch bal.key {
 			case util.OwnerKey:
 				ownerBal = bal.bal
+			case util.OwnerProposerKey:
+				ownerProposerBal = bal.bal
+			case util.OwnerApproverKey:
+				ownerApproverBal = bal.bal
 			case util.OperatorKey:
 				operatorBal = bal.bal
 			case util.RequestKey:
 				requesterBal = bal.bal
 			}
 		case err := <-errCh:
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, nil, err
 		}
 	}
 
-	return ownerBal, operatorBal, requesterBal, nil
+	return ownerBal, ownerProposerBal, ownerApproverBal, operatorBal, requesterBal, nil
 }
 
 func logBal(key util.KeyType, bal *big.Float, fevmAddr address.Address, evmAddr common.Address) {
@@ -114,6 +124,16 @@ var balCmd = &cobra.Command{
 			logFatal(err)
 		}
 
+		ownerProposerEvm, ownerProposerFevm, err := as.GetAddrs(util.OwnerProposerKey, lapi)
+		if err != nil {
+			logFatal(err)
+		}
+
+		ownerApproverEvm, ownerApproverFevm, err := as.GetAddrs(util.OwnerApproverKey, lapi)
+		if err != nil {
+			logFatal(err)
+		}
+
 		operatorEvm, operatorFevm, err := as.GetAddrs(util.OperatorKey, nil)
 		if err != nil {
 			logFatal(err)
@@ -124,14 +144,18 @@ var balCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		ownerBal, operatorBal, requesterBal, err := getBalances(
+		ownerBal, ownerProposerBal, ownerApproverBal, operatorBal, requesterBal, err := getBalances(
 			cmd.Context(),
 			ownerFevm,
+			ownerProposerFevm,
+			ownerApproverFevm,
 			operatorFevm,
 			requestFevm,
 		)
 
 		logBal(util.OwnerKey, ownerBal, ownerFevm, ownerEvm)
+		logBal(util.OwnerProposerKey, ownerProposerBal, ownerProposerFevm, ownerProposerEvm)
+		logBal(util.OwnerApproverKey, ownerApproverBal, ownerApproverFevm, ownerApproverEvm)
 		logBal(util.OperatorKey, operatorBal, operatorFevm, operatorEvm)
 		logBal(util.RequestKey, requesterBal, requestFevm, requestEvm)
 	},
