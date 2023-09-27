@@ -31,6 +31,14 @@ func listAddresses(lapi *api.FullNodeStruct) {
 	if err != nil {
 		logFatal(err)
 	}
+	ownerProposerAddr, ownerProposerFilAddr, err := as.GetAddrs(util.OwnerProposerKey, lapi)
+	if err != nil {
+		logFatal(err)
+	}
+	ownerApproverAddr, ownerApproverFilAddr, err := as.GetAddrs(util.OwnerApproverKey, lapi)
+	if err != nil {
+		logFatal(err)
+	}
 	operatorAddr, operatorDelAddr, err := as.GetAddrs(util.OperatorKey, nil)
 	if err != nil {
 		logFatal(err)
@@ -42,10 +50,22 @@ func listAddresses(lapi *api.FullNodeStruct) {
 
 	if util.IsZeroAddress(ownerAddr) {
 		log.Printf("Owner address: [ Funds needed! ] (ETH), %s (FIL)\n", ownerFilAddr)
-
 	} else {
 		log.Printf("Owner address: %s (ETH), %s (FIL)\n", ownerAddr, ownerFilAddr)
 	}
+	if util.IsZeroAddress(ownerProposerAddr) {
+		log.Printf("Owner proposer address: [ Funds needed! ] (ETH), %s (FIL)\n", ownerProposerFilAddr)
+
+	} else {
+		log.Printf("Owner proposer address: %s (ETH), %s (FIL)\n", ownerProposerAddr, ownerProposerFilAddr)
+	}
+	if util.IsZeroAddress(ownerApproverAddr) {
+		log.Printf("Owner approver address: [ Funds needed! ] (ETH), %s (FIL)\n", ownerApproverFilAddr)
+
+	} else {
+		log.Printf("Owner approver address: %s (ETH), %s (FIL)\n", ownerApproverAddr, ownerApproverFilAddr)
+	}
+	log.Printf("Operator address: %s (ETH), %s (FIL)\n", operatorAddr, operatorDelAddr)
 	log.Printf("Operator address: %s (ETH), %s (FIL)\n", operatorAddr, operatorDelAddr)
 	log.Printf("Request key: %s (ETH), %s (FIL)\n", requestAddr, requestDelAddr)
 

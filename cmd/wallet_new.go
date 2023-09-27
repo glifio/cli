@@ -67,6 +67,7 @@ var newCmd = &cobra.Command{
 				logFatal(err)
 			}
 			owner = accounts.Account{EthAccount: ksOwner}
+			as.Set(string(util.OwnerKey), owner.String())
 		} else {
 			ledgerhub, err := usbwallet.NewLedgerHub()
 			if err != nil {
@@ -77,8 +78,19 @@ var newCmd = &cobra.Command{
 				logFatal("No wallets found")
 			}
 			wallet := wallets[0]
-			accounts := wallet.Accounts()
-			owner = accounts[0]
+			walletAccounts := wallet.Accounts()
+
+			// Note: owner will be an msig, created in a separate step
+
+			ksOwnerProposer, err := ks.NewAccount("")
+			if err != nil {
+				logFatal(err)
+			}
+			ownerProposer := accounts.Account{EthAccount: ksOwnerProposer}
+			as.Set(string(util.OwnerProposerKey), ownerProposer.String())
+
+			ownerApprover := walletAccounts[0]
+			as.Set(string(util.OwnerApproverKey), ownerApprover.String())
 		}
 
 		operatorPassphrase := os.Getenv("GLIF_OPERATOR_PASSPHRASE")
@@ -92,7 +104,6 @@ var newCmd = &cobra.Command{
 			logFatal(err)
 		}
 
-		as.Set(string(util.OwnerKey), owner.String())
 		as.Set(string(util.OperatorKey), operator.Address.String())
 		as.Set(string(util.RequestKey), requester.Address.String())
 

@@ -19,6 +19,8 @@ type KeyType string
 
 const (
 	OwnerKey          KeyType = "owner"
+	OwnerProposerKey  KeyType = "owner-proposer"
+	OwnerApproverKey  KeyType = "owner-approver"
 	OperatorKey       KeyType = "operator"
 	RequestKey        KeyType = "request"
 	OperatorKeyFunded KeyType = "opkeyf"
