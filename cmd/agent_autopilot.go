@@ -207,7 +207,7 @@ func needToPullFunds(cmd *cobra.Command, payAmt *big.Int) (bool, error) {
 func pullFundsFromMiner(cmd *cobra.Command, miner address.Address, amount *big.Int) error {
 	ctx := cmd.Context()
 	from := cmd.Flag("from").Value.String()
-	agentAddr, senderWallet, senderAccount, senderPassphrase, requesterKey, err := commonOwnerOrOperatorSetup(ctx, from)
+	agentAddr, senderWallet, senderAccount, senderPassphrase, proposer, approver, requesterKey, err := commonOwnerOrOperatorSetup(ctx, from)
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func pullFundsFromMiner(cmd *cobra.Command, miner address.Address, amount *big.I
 	}
 	defer journal.RecordEvent(pullevt, func() interface{} { return evt })
 
-	txHash, _, err := PoolsSDK.Act().AgentPullFunds(cmd.Context(), agentAddr, amount, miner, senderWallet, senderAccount, senderPassphrase, requesterKey)
+	txHash, _, err := PoolsSDK.Act().AgentPullFunds(cmd.Context(), agentAddr, amount, miner, senderWallet, senderAccount, senderPassphrase, proposer, approver, requesterKey)
 	if err != nil {
 		evt.Error = err.Error()
 		return err

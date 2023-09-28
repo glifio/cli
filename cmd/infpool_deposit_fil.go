@@ -19,7 +19,7 @@ var depositFILCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		from := cmd.Flag("from").Value.String()
-		_, senderWallet, senderAccount, senderPassphrase, _, err := commonOwnerOrOperatorSetup(ctx, from)
+		_, senderWallet, senderAccount, senderPassphrase, proposer, approver, _, err := commonOwnerOrOperatorSetup(ctx, from)
 		if err != nil {
 			logFatal(err)
 		}
@@ -37,7 +37,7 @@ var depositFILCmd = &cobra.Command{
 		s.Start()
 		defer s.Stop()
 
-		txHash, _, err := PoolsSDK.Act().InfPoolDepositFIL(ctx, receiver, amount, senderWallet, senderAccount, senderPassphrase)
+		txHash, _, err := PoolsSDK.Act().InfPoolDepositFIL(ctx, receiver, amount, senderWallet, senderAccount, senderPassphrase, proposer, approver)
 		if err != nil {
 			logFatal(err)
 		}

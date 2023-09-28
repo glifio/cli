@@ -26,7 +26,7 @@ var forwardFIL = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		from := args[0]
-		_, senderWallet, senderAccount, senderPassphrase, _, err := commonOwnerOrOperatorSetup(ctx, from)
+		_, senderWallet, senderAccount, senderPassphrase, proposer, approver, _, err := commonOwnerOrOperatorSetup(ctx, from)
 		if err != nil {
 			logFatal(err)
 		}
@@ -98,7 +98,7 @@ var forwardFIL = &cobra.Command{
 			logFatal(err)
 		}
 
-		wrappedClient, auth, err := walletutils.NewWalletTransactor(ctx, lapi, ethClient, senderWallet, &senderAccount, senderPassphrase, chainID)
+		wrappedClient, auth, err := walletutils.NewWalletTransactor(ctx, lapi, ethClient, senderWallet, &senderAccount, senderPassphrase, proposer, approver, chainID)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

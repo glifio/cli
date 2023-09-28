@@ -175,26 +175,26 @@ func parseAddress(ctx context.Context, addr string, lapi lotusapi.FullNode) (com
 	return common.HexToAddress(ethAddr.String()), nil
 }
 
-func commonSetupOwnerCall() (agentAddr common.Address, ownerWallet accounts.Wallet, ownerAccount accounts.Account, ownerPassphrase string, requesterKey *ecdsa.PrivateKey, err error) {
+func commonSetupOwnerCall() (agentAddr common.Address, ownerWallet accounts.Wallet, ownerAccount accounts.Account, ownerPassphrase string, proposer address.Address, approver address.Address, requesterKey *ecdsa.PrivateKey, err error) {
 	as := util.AgentStore()
 
 	_, ownerFilAddr, err := as.GetAddrs(util.OwnerKey, nil)
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
-	agentAddr, wallet, account, passphrase, requesterKey, err := commonOwnerOrOperatorSetup(context.Background(), ownerFilAddr.String())
+	agentAddr, wallet, account, passphrase, proposer, approver, requesterKey, err := commonOwnerOrOperatorSetup(context.Background(), ownerFilAddr.String())
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
-	return agentAddr, wallet, account, passphrase, requesterKey, nil
+	return agentAddr, wallet, account, passphrase, proposer, approver, requesterKey, nil
 }
 
-func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr common.Address, wallet accounts.Wallet, account accounts.Account, passphrase string, requesterKey *ecdsa.PrivateKey, err error) {
+func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr common.Address, wallet accounts.Wallet, account accounts.Account, passphrase string, proposer address.Address, approver address.Address, requesterKey *ecdsa.PrivateKey, err error) {
 	err = checkWalletMigrated()
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
 	as := util.AgentStore()
@@ -202,13 +202,23 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 
 	opEvm, opFevm, err := as.GetAddrs(util.OperatorKey, nil)
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
+	}
+
+	_, proposer, err = as.GetAddrs(util.OwnerProposerKey, nil)
+	if err != nil {
+		logFatal(err)
+	}
+
+	_, approver, err = as.GetAddrs(util.OwnerApproverKey, nil)
+	if err != nil {
+		logFatal(err)
 	}
 
 	// FIXME: Handle Fil addresses
 	owEvm, owFevm, err := as.GetAddrs(util.OwnerKey, nil)
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
 	var fromEthAddress common.Address
@@ -220,7 +230,7 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 	case "", opEvm.String(), opFevm.String():
 		funded, err := as.IsFunded(ctx, PoolsSDK, opFevm, util.OperatorKeyFunded, opEvm.String())
 		if err != nil {
-			return common.Address{}, nil, accounts.Account{}, "", nil, err
+			return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 		}
 		if funded {
 			fromEthAddress = opEvm
@@ -229,7 +239,7 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 			fromEthAddress = owEvm
 		}
 		if err != nil {
-			return common.Address{}, nil, accounts.Account{}, "", nil, err
+			return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 		}
 	case owEvm.String(), owFevm.String():
 		if owFevm.Protocol() == address.Delegated {
@@ -238,15 +248,15 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 			fromFilAddress = owFevm
 		}
 	default:
-		return common.Address{}, nil, accounts.Account{}, "", nil, errors.New("invalid from address")
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, errors.New("invalid from address")
 	}
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
 	agentAddr, err = getAgentAddress()
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
 	if !fromFilAddress.Empty() {
@@ -269,7 +279,7 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 
 	wallet, err = manager.Find(account)
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
 	var envSet bool
@@ -288,7 +298,7 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 				prompt := &survey.Password{Message: message}
 				survey.AskOne(prompt, &passphrase)
 				if passphrase == "" {
-					return common.Address{}, nil, accounts.Account{}, "", nil, fmt.Errorf("Aborted")
+					return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, fmt.Errorf("Aborted")
 				}
 			}
 		}
@@ -296,10 +306,10 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 
 	requesterKey, err = getRequesterKey(as, ks)
 	if err != nil {
-		return common.Address{}, nil, accounts.Account{}, "", nil, err
+		return common.Address{}, nil, accounts.Account{}, "", address.Address{}, address.Address{}, nil, err
 	}
 
-	return agentAddr, wallet, account, passphrase, requesterKey, nil
+	return agentAddr, wallet, account, passphrase, proposer, approver, requesterKey, nil
 }
 
 func getRequesterKey(as *util.AgentStorage, ks *keystore.KeyStore) (*ecdsa.PrivateKey, error) {

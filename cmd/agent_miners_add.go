@@ -35,7 +35,7 @@ var addCmd = &cobra.Command{
 			previewAction(cmd, args, constants.MethodAddMiner)
 			return
 		}
-		agentAddr, ownerWallet, ownerAccount, ownerPassphrase, requesterKey, err := commonSetupOwnerCall()
+		agentAddr, ownerWallet, ownerAccount, ownerPassphrase, proposer, approver, requesterKey, err := commonSetupOwnerCall()
 		if err != nil {
 			logFatal(err)
 		}
@@ -75,6 +75,8 @@ var addCmd = &cobra.Command{
 			ownerWallet,
 			ownerAccount,
 			ownerPassphrase,
+			proposer,
+			approver,
 			requesterKey,
 		)
 		if err != nil {

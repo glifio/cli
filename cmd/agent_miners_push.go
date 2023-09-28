@@ -19,7 +19,7 @@ var pushFundsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		from := cmd.Flag("from").Value.String()
-		agentAddr, senderWallet, senderAccount, senderPassphrase, requesterKey, err := commonOwnerOrOperatorSetup(ctx, from)
+		agentAddr, senderWallet, senderAccount, senderPassphrase, proposer, approver, requesterKey, err := commonOwnerOrOperatorSetup(ctx, from)
 		if err != nil {
 			logFatal(err)
 		}
@@ -47,7 +47,7 @@ var pushFundsCmd = &cobra.Command{
 		defer journal.Close()
 		defer journal.RecordEvent(pushevt, func() interface{} { return evt })
 
-		txHash, _, err := PoolsSDK.Act().AgentPushFunds(ctx, agentAddr, amount, minerAddr, senderWallet, senderAccount, senderPassphrase, requesterKey)
+		txHash, _, err := PoolsSDK.Act().AgentPushFunds(ctx, agentAddr, amount, minerAddr, senderWallet, senderAccount, senderPassphrase, proposer, approver, requesterKey)
 		if err != nil {
 			evt.Error = err.Error()
 			logFatal(err)

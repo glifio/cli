@@ -16,7 +16,7 @@ var iFILTransferCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		from := cmd.Flag("from").Value.String()
-		_, senderWallet, senderAccount, senderPassphrase, _, err := commonOwnerOrOperatorSetup(ctx, from)
+		_, senderWallet, senderAccount, senderPassphrase, proposer, approver, _, err := commonOwnerOrOperatorSetup(ctx, from)
 		if err != nil {
 			logFatal(err)
 		}
@@ -40,7 +40,7 @@ var iFILTransferCmd = &cobra.Command{
 		s.Start()
 		defer s.Stop()
 
-		txHash, _, err := PoolsSDK.Act().IFILTransfer(ctx, addr, amt, senderWallet, senderAccount, senderPassphrase)
+		txHash, _, err := PoolsSDK.Act().IFILTransfer(ctx, addr, amt, senderWallet, senderAccount, senderPassphrase, proposer, approver)
 		if err != nil {
 			logFatalf("Failed to transfer iFIL %s", err)
 		}

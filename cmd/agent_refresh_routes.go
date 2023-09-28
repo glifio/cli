@@ -15,7 +15,7 @@ var refreshRoutesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		from := cmd.Flag("from").Value.String()
-		agentAddr, senderWallet, senderAccount, senderPassphrase, _, err := commonOwnerOrOperatorSetup(ctx, from)
+		agentAddr, senderWallet, senderAccount, senderPassphrase, proposer, approver, _, err := commonOwnerOrOperatorSetup(ctx, from)
 		if err != nil {
 			logFatal(err)
 		}
@@ -24,7 +24,7 @@ var refreshRoutesCmd = &cobra.Command{
 		s.Start()
 		defer s.Stop()
 
-		txHash, _, err := PoolsSDK.Act().AgentRefreshRoutes(ctx, agentAddr, senderWallet, senderAccount, senderPassphrase)
+		txHash, _, err := PoolsSDK.Act().AgentRefreshRoutes(ctx, agentAddr, senderWallet, senderAccount, senderPassphrase, proposer, approver)
 		if err != nil {
 			logFatalf("Failed to refresh routes %s", err)
 		}

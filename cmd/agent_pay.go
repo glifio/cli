@@ -57,7 +57,7 @@ func init() {
 func pay(cmd *cobra.Command, args []string, paymentType PaymentType) (*big.Int, error) {
 	ctx := cmd.Context()
 	from := cmd.Flag("from").Value.String()
-	agentAddr, senderWallet, senderAccount, senderPassphrase, requesterKey, err := commonOwnerOrOperatorSetup(ctx, from)
+	agentAddr, senderWallet, senderAccount, senderPassphrase, proposer, approver, requesterKey, err := commonOwnerOrOperatorSetup(ctx, from)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func pay(cmd *cobra.Command, args []string, paymentType PaymentType) (*big.Int, 
 	defer journal.Close()
 	defer journal.RecordEvent(payevt, func() interface{} { return evt })
 
-	txHash, _, err := PoolsSDK.Act().AgentPay(ctx, agentAddr, poolID, payAmt, senderWallet, senderAccount, senderPassphrase, requesterKey)
+	txHash, _, err := PoolsSDK.Act().AgentPay(ctx, agentAddr, poolID, payAmt, senderWallet, senderAccount, senderPassphrase, proposer, approver, requesterKey)
 	if err != nil {
 		evt.Error = err.Error()
 		return nil, err

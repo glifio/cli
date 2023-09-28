@@ -47,6 +47,16 @@ var createCmd = &cobra.Command{
 			logFatal(err)
 		}
 
+		_, proposer, err := as.GetAddrs(util.OwnerProposerKey, lapi)
+		if err != nil {
+			logFatal(err)
+		}
+
+		_, approver, err := as.GetAddrs(util.OwnerApproverKey, lapi)
+		if err != nil {
+			logFatal(err)
+		}
+
 		operatorAddr, _, err := as.GetAddrs(util.OperatorKey, nil)
 		if err != nil {
 			logFatal(err)
@@ -60,7 +70,14 @@ var createCmd = &cobra.Command{
 		var account accounts.Account
 		var passphrase string
 
-		if ownerFilAddr.Protocol() == address.SECP256K1 {
+		if ownerFilAddr.Protocol() == address.Actor {
+			// f2 address = msig
+			if ownerFilAddr.Empty() {
+				logFatal("Owner key not found")
+			}
+
+			account = accounts.Account{FilAddress: ownerFilAddr}
+		} else if ownerFilAddr.Protocol() == address.SECP256K1 {
 			if ownerFilAddr.Empty() {
 				logFatal("Owner key not found")
 			}
@@ -114,6 +131,8 @@ var createCmd = &cobra.Command{
 			wallet,
 			account,
 			passphrase,
+			proposer,
+			approver,
 		)
 		if err != nil {
 			logFatalf("pools sdk: agent create: %s", err)
