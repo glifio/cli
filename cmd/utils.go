@@ -27,6 +27,8 @@ import (
 	"github.com/glifio/cli/util"
 	denoms "github.com/glifio/go-pools/util"
 	"github.com/glifio/go-wallet-utils/accounts"
+	"github.com/glifio/go-wallet-utils/filkeystore"
+	"github.com/glifio/go-wallet-utils/msigwallet"
 	"github.com/glifio/go-wallet-utils/usbwallet"
 	"github.com/spf13/cobra"
 )
@@ -268,14 +270,25 @@ func commonOwnerOrOperatorSetup(ctx context.Context, from string) (agentAddr com
 	backends := []ethaccounts.Backend{}
 	backends = append(backends, ks)
 	filBackends := []accounts.Backend{}
+
+	var msigLedgerHub *msigwallet.Hub
 	if account.IsFil() {
 		ledgerhub, err := usbwallet.NewLedgerHub()
 		if err != nil {
 			logFatal("Ledger not found")
 		}
-		filBackends = []accounts.Backend{ledgerhub}
+
+		msigLedgerHub = msigwallet.NewMsigLedgerHub()
+		msigLedgerHub.AddMsig(owFevm, proposer, approver)
+
+		ksFil := filkeystore.KeystoreWrapper{Keystore: ks}
+
+		filBackends = []accounts.Backend{ledgerhub, msigLedgerHub, ksFil}
 	}
 	manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, filBackends)
+	if account.IsFil() {
+		msigLedgerHub.SetManager(manager)
+	}
 
 	wallet, err = manager.Find(account)
 	if err != nil {

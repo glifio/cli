@@ -124,7 +124,6 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			logFatal(err)
 		}
-		fmt.Printf("Jim3 wallet: %+v\n", wallet)
 
 		if util.IsZeroAddress(requestAddr) {
 			logFatal("Requester key not found.")
