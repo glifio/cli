@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/glifio/cli/util"
 	"github.com/glifio/go-wallet-utils/accounts"
+	"github.com/glifio/go-wallet-utils/filkeystore"
 	"github.com/glifio/go-wallet-utils/msigwallet"
 	"github.com/glifio/go-wallet-utils/usbwallet"
 	"github.com/spf13/cobra"
@@ -110,7 +111,9 @@ var createCmd = &cobra.Command{
 			msigLedgerHub = msigwallet.NewMsigLedgerHub()
 			msigLedgerHub.AddMsig(ownerFilAddr, proposer, approver)
 
-			filBackends = []accounts.Backend{ledgerhub, msigLedgerHub}
+			ksFil := filkeystore.KeystoreWrapper{Keystore: ks}
+
+			filBackends = []accounts.Backend{ledgerhub, msigLedgerHub, ksFil}
 		}
 		manager := accounts.NewManager(&ethaccounts.Config{InsecureUnlockAllowed: false}, backends, filBackends)
 		if account.IsFil() {
@@ -121,6 +124,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			logFatal(err)
 		}
+		fmt.Printf("Jim3 wallet: %+v\n", wallet)
 
 		if util.IsZeroAddress(requestAddr) {
 			logFatal("Requester key not found.")
