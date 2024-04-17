@@ -12,9 +12,9 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/glifio/cli/util"
 	walletutils "github.com/glifio/go-wallet-utils"
+	"github.com/jimpick/go-ethereum/accounts"
 	"github.com/spf13/cobra"
 )
 

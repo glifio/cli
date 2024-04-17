@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/jimpick/go-ethereum/accounts/keystore"
 )
 
 type KeyStorage struct {

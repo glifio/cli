@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -24,6 +23,7 @@ import (
 	"github.com/glifio/go-pools/terminate"
 	"github.com/glifio/go-pools/util"
 	"github.com/glifio/go-pools/vc"
+	"github.com/jimpick/go-ethereum/common"
 	"github.com/rodaine/table"
 	"github.com/spf13/cobra"
 	"github.com/ttacon/chalk"

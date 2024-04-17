@@ -1,8 +1,8 @@
 package util
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/filecoin-project/go-address"
+	"github.com/jimpick/go-ethereum/common"
 )
 
 type AccountsStorage struct {

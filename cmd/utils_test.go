@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/jimpick/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 

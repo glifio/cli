@@ -25,7 +25,6 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/ethereum/go-ethereum/common"
 	jnal "github.com/glifio/cli/journal"
 	"github.com/glifio/cli/journal/fsjournal"
 	"github.com/glifio/cli/util"
@@ -33,6 +32,7 @@ import (
 	"github.com/glifio/go-pools/deploy"
 	"github.com/glifio/go-pools/sdk"
 	types "github.com/glifio/go-pools/types"
+	"github.com/jimpick/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"

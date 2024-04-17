@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/glifio/cli/events"
 	"github.com/glifio/go-pools/abigen"
 	"github.com/glifio/go-pools/constants"
 	"github.com/glifio/go-pools/deploy"
 	denoms "github.com/glifio/go-pools/util"
+	"github.com/jimpick/go-ethereum/common"
 	"github.com/spf13/cobra"
 )
 
