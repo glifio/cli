@@ -9,11 +9,11 @@ require (
 	github.com/filecoin-project/go-address v1.1.0
 	github.com/filecoin-project/go-state-types v0.12.8
 	github.com/filecoin-project/lotus v1.25.3-0.20240122193923-8f73f1579334
-	github.com/glifio/go-pools v1.0.0-prerelease-5.0.20240417002212-db00e95c4cd4
-	github.com/glifio/go-wallet-utils v0.0.0-20240417001355-f797c4e4939e
+	github.com/glifio/go-pools v1.0.0-prerelease-5.0.20240417003251-da4a4f1b1019
+	github.com/glifio/go-wallet-utils v0.0.0-20240417003310-a1daa820f9a5
 	github.com/golang/mock v1.6.0
 	github.com/ipfs/go-cid v0.4.1
-	github.com/jimpick/go-ethereum v1.12.1-0.20240416235749-936c2ee98847
+	github.com/jimpick/go-ethereum v1.12.1-0.20240417003055-363296461c72
 	github.com/pelletier/go-toml/v2 v2.0.6
 	github.com/raulk/clock v1.1.0
 	github.com/rodaine/table v1.1.0
