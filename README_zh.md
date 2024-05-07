@@ -9,16 +9,21 @@
 
 For English README, please click [here](https://github.com/glifio/glif/blob/main/README.md).
 
-**GLIF 命令行界面是与 GLIF Pools 协议交互的起点**
+**GLIF 命令行界面是用于与 GLIF Pools 协议互动的工具**
 
 - [GLIF CLI](#glif-cli)
   - [安装](#安装)
+    - [使用go安装](#使用go安装)
+    - [Linux（即将推出）](#Linux即将推出)
+    - [MacOS（即将推出）](#macos即将推出)
+    - [从源码构建](#从源码构建)
   - [命名的钱包账户和地址](#命名的钱包账户和地址)
   - [钱包](#钱包)
     - [列出现有的钱包账户和余额](#列出现有的钱包账户和余额)
     - [为使用 Agent 创建钱包账户](#为使用-agent-创建钱包账户)
     - [通用钱包账户](#通用钱包账户)
     - [密码短语](#密码短语)
+    - [导入/导出/移除账户](#导入导出移除账户)
     - [从旧版的 keystore.toml 钱包迁移](#从旧版的-keystoretoml-钱包迁移)
   - [代理（Agent）-- 开始借款](#代理agent---开始借款)
     - [创建 Agent](#创建-agent)
@@ -41,8 +46,21 @@ For English README, please click [here](https://github.com/glifio/glif/blob/main
 
 ## 安装
 
+### 使用go安装
+
+如果你已经安装了go 1.21版本，可以使用go安装程序轻松安装GLIF CLI：<br />
+`go install github.com/glifio/glif/v2@latest`
+
+### Linux（即将推出）
+
+### MacOS（即将推出）
+
+### 从源码构建
+
+如用从源码构建，你需要安装go 1.21或更高版本。
+
 首先，从 GitHub 克隆仓库: <br />
-`git clone git@github.com:glifio/cli.git`<br />
+`git clone git@github.com:glifio/glif.git`<br />
 `cd cli`<br />
 
 **主网安装**
@@ -101,6 +119,17 @@ GLIF CLI 内嵌了一个用于向 Filecoin 写入交易的钱包。该钱包基�
 ### 密码短语
 
 钱包账户可以通过独特的密码短语进行额外的安全保护。私钥使用密码短语加密，因此即使攻击者获得了您的 GLIF CLI Keystore，也难以获得您账户的私钥。**强烈建议您使用安全的密码短语保护您的钱包账户**。
+
+### 导入/导出/移除账户
+
+你可以轻松导入、导出和移除钱包中的账户。导入和/或导出账户时，支持原始私钥格式和密码短语加密的密钥格式。请参见下文以获取更多信息。
+
+- 导出私钥，加密你的密码短语：`glif wallet export-account <account-name> --really-do-it`  
+  请注意，你需要密码才能将账户重新导入钱包中。
+- 导出未加密的原始私钥（危险）：`glif wallet export-account-raw <account-name> --really-do-it`  
+- 导入密码短语加密的私钥：`glif wallet import-account <account-name> <hex-encrypted-keyfile>`  
+- 导入原始的、十六进制编码的私钥：`glif wallet import-account-raw <account-name> <hex-raw-key>`  
+- 从密钥存储中移除账户：`glif wallet remove-account <account-name> --reall-do-it`
 
 **请注意，如果您忘记了密码短语，您的私钥将无法恢复。把您的密码短语写在一个安全的地方，避免被盗或丢失是非常重要的。**
 
