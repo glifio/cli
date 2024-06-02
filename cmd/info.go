@@ -72,18 +72,18 @@ func getCommitHashFromTag(tagName string) (string, error) {
 	return tag.Object.SHA, nil
 }
 
-func getLatestCommit() (string, bool, error) {
+func getLatestTag() (string, string, bool, error) {
 	release, err := getLatestRelease()
 	if err != nil {
-		return "", false, err
+		return "", "", false, err
 	}
 
 	commitHash, err := getCommitHashFromTag(release.TagName)
 	if err != nil {
-		return "", false, err
+		return "", "", false, err
 	}
 
-	return commitHash, release.Draft || release.PreRelease, nil
+	return release.TagName, commitHash, release.Draft || release.PreRelease, nil
 }
 
 var rootInfoCmd = &cobra.Command{
@@ -94,11 +94,12 @@ var rootInfoCmd = &cobra.Command{
 		fmt.Printf("Config directory: %s\n", cfgDir)
 		fmt.Printf("Chain ID: %d\n", chainID)
 		fmt.Printf("Commit hash: %s\n", CommitHash)
-
-		release, stableVersion, err := getLatestCommit()
+		tagName, release, stableVersion, err := getLatestTag()
 		if err != nil {
 			logFatal(err)
 		}
+		fmt.Printf("Tag: %s\n", tagName)
+
 		fmt.Printf("Latest release: %s (prelease / draft release): %t\n", release, stableVersion)
 
 		if stableVersion && release != CommitHash {
